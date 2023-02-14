@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxManufacturer() *schema.Resource {
@@ -55,8 +55,6 @@ func resourceNetboxManufacturerCreate(d *schema.ResourceData, m interface{}) err
 		data.Slug = strToPtr(slugValue.(string))
 	}
 
-	data.Tags = []*models.NestedTag{}
-
 	params := dcim.NewDcimManufacturersCreateParams().WithData(&data)
 
 	res, err := api.Dcim.DcimManufacturersCreate(params, nil)
@@ -71,31 +69,31 @@ func resourceNetboxManufacturerCreate(d *schema.ResourceData, m interface{}) err
 
 func resourceNetboxManufacturerRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimManufacturersReadParams().WithID(id)
 
 	res, err := api.Dcim.DcimManufacturersRead(params, nil)
 
 	if err != nil {
-		errorcode := err.(*dcim.DcimManufacturersReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("slug", res.GetPayload().Slug)
-
-	return nil
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
+	return d.Set("slug", res.GetPayload().Slug)
 }
 
 func resourceNetboxManufacturerUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.Manufacturer{}
 
 	name := d.Get("name").(string)
@@ -109,12 +107,10 @@ func resourceNetboxManufacturerUpdate(d *schema.ResourceData, m interface{}) err
 		data.Slug = strToPtr(slugValue.(string))
 	}
 
-	data.Tags = []*models.NestedTag{}
-
 	params := dcim.NewDcimManufacturersPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Dcim.DcimManufacturersPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimManufacturersPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -124,11 +120,14 @@ func resourceNetboxManufacturerUpdate(d *schema.ResourceData, m interface{}) err
 func resourceNetboxManufacturerDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimManufacturersDeleteParams().WithID(id)
 
-	_, err := api.Dcim.DcimManufacturersDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimManufacturersDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

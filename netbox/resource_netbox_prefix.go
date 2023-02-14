@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxPrefix() *schema.Resource {
@@ -39,10 +39,6 @@ func resourceNetboxPrefix() *schema.Resource {
 				Optional: true,
 			},
 			"is_pool": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"mark_utilized": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
@@ -80,16 +76,13 @@ func resourceNetboxPrefixCreate(d *schema.ResourceData, m interface{}) error {
 	prefix := d.Get("prefix").(string)
 	status := d.Get("status").(string)
 	description := d.Get("description").(string)
-	is_pool := d.Get("is_pool").(bool)
-	mark_utilized := d.Get("mark_utilized").(bool)
+	isPool := d.Get("is_pool").(bool)
 
 	data.Prefix = &prefix
 	data.Status = status
 
 	data.Description = description
-	data.IsPool = is_pool
-
-	data.MarkUtilized = mark_utilized
+	data.IsPool = isPool
 
 	if vrfID, ok := d.GetOk("vrf_id"); ok {
 		data.Vrf = int64ToPtr(int64(vrfID.(int)))
@@ -111,7 +104,7 @@ func resourceNetboxPrefixCreate(d *schema.ResourceData, m interface{}) error {
 		data.Role = int64ToPtr(int64(roleID.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamPrefixesCreateParams().WithData(&data)
 	res, err := api.Ipam.IpamPrefixesCreate(params, nil)
@@ -125,82 +118,105 @@ func resourceNetboxPrefixCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxPrefixRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamPrefixesReadParams().WithID(id)
 
 	res, err := api.Ipam.IpamPrefixesRead(params, nil)
 	if err != nil {
-		errorcode := err.(*ipam.IpamPrefixesReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
-	d.Set("description", res.GetPayload().Description)
-	d.Set("is_pool", res.GetPayload().IsPool)
-	d.Set("mark_utilized", res.GetPayload().MarkUtilized)
+	if err := d.Set("description", res.GetPayload().Description); err != nil {
+		return err
+	}
+	if err := d.Set("is_pool", res.GetPayload().IsPool); err != nil {
+		return err
+	}
 	if res.GetPayload().Status != nil {
-		d.Set("status", res.GetPayload().Status.Value)
+		if err := d.Set("status", res.GetPayload().Status.Value); err != nil {
+			return err
+		}
 	}
 	if res.GetPayload().Prefix != nil {
-		d.Set("prefix", res.GetPayload().Prefix)
+		if err := d.Set("prefix", res.GetPayload().Prefix); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Vrf != nil {
-		d.Set("vrf_id", res.GetPayload().Vrf.ID)
+		if err := d.Set("vrf_id", res.GetPayload().Vrf.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("vrf_id", nil)
+		if err := d.Set("vrf_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Tenant != nil {
-		d.Set("tenant_id", res.GetPayload().Tenant.ID)
+		if err := d.Set("tenant_id", res.GetPayload().Tenant.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("tenant_id", nil)
+		if err := d.Set("tenant_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Site != nil {
-		d.Set("site_id", res.GetPayload().Site.ID)
+		if err := d.Set("site_id", res.GetPayload().Site.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("site_id", nil)
+		if err := d.Set("site_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Vlan != nil {
-		d.Set("vlan_id", res.GetPayload().Vlan.ID)
+		if err := d.Set("vlan_id", res.GetPayload().Vlan.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("vlan_id", nil)
+		if err := d.Set("vlan_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Role != nil {
-		d.Set("role_id", res.GetPayload().Role.ID)
+		if err := d.Set("role_id", res.GetPayload().Role.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("role_id", nil)
+		if err := d.Set("role_id", nil); err != nil {
+			return err
+		}
 	}
 
-	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
+	return d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
 	// FIGURE OUT NESTED VRF AND NESTED VLAN (from maybe interfaces?)
-
-	return nil
 }
 
 func resourceNetboxPrefixUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritablePrefix{}
 	prefix := d.Get("prefix").(string)
 	status := d.Get("status").(string)
 	description := d.Get("description").(string)
-	is_pool := d.Get("is_pool").(bool)
-	mark_utilized := d.Get("mark_utilized").(bool)
+	isPool := d.Get("is_pool").(bool)
 
 	data.Prefix = &prefix
 	data.Status = status
 
 	data.Description = description
-	data.IsPool = is_pool
-	data.MarkUtilized = mark_utilized
+	data.IsPool = isPool
 
 	if vrfID, ok := d.GetOk("vrf_id"); ok {
 		data.Vrf = int64ToPtr(int64(vrfID.(int)))
@@ -222,11 +238,11 @@ func resourceNetboxPrefixUpdate(d *schema.ResourceData, m interface{}) error {
 		data.Role = int64ToPtr(int64(roleID.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamPrefixesUpdateParams().WithID(id).WithData(&data)
-	_, err := api.Ipam.IpamPrefixesUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamPrefixesUpdate(params, nil); err != nil {
 		return err
 	}
 	return resourceNetboxPrefixRead(d, m)
@@ -234,10 +250,13 @@ func resourceNetboxPrefixUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxPrefixDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
-	params := ipam.NewIpamPrefixesDeleteParams().WithID(id)
-	_, err := api.Ipam.IpamPrefixesDelete(params, nil)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
+		return err
+	}
+	params := ipam.NewIpamPrefixesDeleteParams().WithID(id)
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamPrefixesDelete(params, nil); err != nil {
 		return err
 	}
 	d.SetId("")

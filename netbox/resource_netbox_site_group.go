@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxSiteGroup() *schema.Resource {
@@ -105,11 +105,19 @@ func resourceNetboxSiteGroupRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	siteGroup := res.GetPayload()
-	d.Set("name", siteGroup.Name)
-	d.Set("slug", siteGroup.Slug)
-	d.Set("description", siteGroup.Description)
+	if err := d.Set("name", siteGroup.Name); err != nil {
+		return err
+	}
+	if err := d.Set("slug", siteGroup.Slug); err != nil {
+		return err
+	}
+	if err := d.Set("description", siteGroup.Description); err != nil {
+		return err
+	}
 	if siteGroup.Parent != nil {
-		d.Set("parent_id", siteGroup.Parent.ID)
+		if err := d.Set("parent_id", siteGroup.Parent.ID); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -122,7 +130,7 @@ func resourceNetboxSiteGroupUpdate(d *schema.ResourceData, m interface{}) error 
 
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	parent_id := int64(d.Get("parent_id").(int))
+	parentID := int64(d.Get("parent_id").(int))
 
 	slugValue, slugOk := d.GetOk("slug")
 	var slug string
@@ -138,8 +146,8 @@ func resourceNetboxSiteGroupUpdate(d *schema.ResourceData, m interface{}) error 
 	data.Description = description
 	data.Tags = []*models.NestedTag{}
 
-	if parent_id != 0 {
-		data.Parent = &parent_id
+	if parentID != 0 {
+		data.Parent = &parentID
 	}
 	params := dcim.NewDcimSiteGroupsPartialUpdateParams().WithID(id).WithData(&data)
 

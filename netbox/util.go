@@ -20,7 +20,7 @@ func float64ToPtr(i float64) *float64 {
 }
 
 func toInt64List(a interface{}) []int64 {
-	intList := []int64{}
+	intList := make([]int64, 0)
 	for _, number := range a.(*schema.Set).List() {
 		if n, ok := number.(int); ok {
 			intList = append(intList, int64(n))

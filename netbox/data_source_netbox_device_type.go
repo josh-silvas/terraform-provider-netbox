@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
 )
 
 func dataSourceNetboxDeviceType() *schema.Resource {
@@ -74,11 +74,20 @@ func dataSourceNetboxDeviceTypeRead(d *schema.ResourceData, m interface{}) error
 
 	result := res.GetPayload().Results[0]
 	d.SetId(strconv.FormatInt(result.ID, 10))
-	d.Set("is_full_depth", result.IsFullDepth)
-	d.Set("manufacturer_id", result.Manufacturer.ID)
-	d.Set("model", result.Model)
-	d.Set("part_number", result.PartNumber)
-	d.Set("slug", result.Slug)
-	d.Set("u_height", result.UHeight)
-	return nil
+	if err := d.Set("is_full_depth", result.IsFullDepth); err != nil {
+		return err
+	}
+	if err := d.Set("manufacturer_id", result.Manufacturer.ID); err != nil {
+		return err
+	}
+	if err := d.Set("model", result.Model); err != nil {
+		return err
+	}
+	if err := d.Set("part_number", result.PartNumber); err != nil {
+		return err
+	}
+	if err := d.Set("slug", result.Slug); err != nil {
+		return err
+	}
+	return d.Set("u_height", result.UHeight)
 }

@@ -3,10 +3,10 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxAsn() *schema.Resource {
@@ -49,7 +49,7 @@ func resourceNetboxAsnCreate(d *schema.ResourceData, m interface{}) error {
 	rir := int64(d.Get("rir_id").(int))
 	data.Rir = &rir
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamAsnsCreateParams().WithData(&data)
 
@@ -80,12 +80,14 @@ func resourceNetboxAsnRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("asn", res.GetPayload().Asn)
-	d.Set("rir_id", res.GetPayload().Rir)
+	if err := d.Set("asn", res.GetPayload().Asn); err != nil {
+		return err
+	}
+	if err := d.Set("rir_id", res.GetPayload().Rir); err != nil {
+		return err
+	}
 
-	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
-
-	return nil
+	return d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
 }
 
 func resourceNetboxAsnUpdate(d *schema.ResourceData, m interface{}) error {
@@ -100,7 +102,7 @@ func resourceNetboxAsnUpdate(d *schema.ResourceData, m interface{}) error {
 	rir := int64(d.Get("rir_id").(int))
 	data.Rir = &rir
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamAsnsUpdateParams().WithID(id).WithData(&data)
 

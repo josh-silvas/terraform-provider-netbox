@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxIpRange() *schema.Resource {
@@ -74,7 +74,7 @@ func resourceNetboxIpRangeCreate(d *schema.ResourceData, m interface{}) error {
 	data.Status = status
 	data.Description = description
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamIPRangesCreateParams().WithData(&data)
 	res, err := api.Ipam.IpamIPRangesCreate(params, nil)
@@ -103,36 +103,47 @@ func resourceNetboxIpRangeRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if res.GetPayload().StartAddress != nil {
-		d.Set("start_address", res.GetPayload().StartAddress)
+		if err := d.Set("start_address", res.GetPayload().StartAddress); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().EndAddress != nil {
-		d.Set("end_address", res.GetPayload().EndAddress)
+		if err := d.Set("end_address", res.GetPayload().EndAddress); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Status != nil {
-		d.Set("status", res.GetPayload().Status.Value)
+		if err := d.Set("status", res.GetPayload().Status.Value); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Vrf != nil {
-		d.Set("vrf_id", res.GetPayload().Vrf.ID)
+		if err := d.Set("vrf_id", res.GetPayload().Vrf.ID); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Description != "" {
-		d.Set("description", res.GetPayload().Description)
+		if err := d.Set("description", res.GetPayload().Description); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Tenant != nil {
-		d.Set("tenant_id", res.GetPayload().Tenant.ID)
+		if err := d.Set("tenant_id", res.GetPayload().Tenant.ID); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Role != nil {
-		d.Set("role_id", res.GetPayload().Role.ID)
+		if err := d.Set("role_id", res.GetPayload().Role.ID); err != nil {
+			return err
+		}
 	}
-
-	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
-
-	return nil
+	return d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
 }
 
 func resourceNetboxIpRangeUpdate(d *schema.ResourceData, m interface{}) error {
@@ -162,7 +173,7 @@ func resourceNetboxIpRangeUpdate(d *schema.ResourceData, m interface{}) error {
 		data.Role = int64ToPtr(int64(roleID.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamIPRangesUpdateParams().WithID(id).WithData(&data)
 	_, err := api.Ipam.IpamIPRangesUpdate(params, nil)

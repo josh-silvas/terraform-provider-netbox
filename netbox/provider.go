@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/status"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"golang.org/x/exp/slices"
 )
 
 // This makes the description contain the default value, particularly useful for the docs
@@ -62,9 +59,6 @@ func Provider() *schema.Provider {
 			"netbox_virtual_machine":      resourceNetboxVirtualMachine(),
 			"netbox_cluster_type":         resourceNetboxClusterType(),
 			"netbox_cluster":              resourceNetboxCluster(),
-			"netbox_contact":              resourceNetboxContact(),
-			"netbox_contact_assignment":   resourceNetboxContactAssignment(),
-			"netbox_contact_role":         resourceNetboxContactRole(),
 			"netbox_device":               resourceNetboxDevice(),
 			"netbox_device_interface":     resourceNetboxDeviceInterface(),
 			"netbox_device_type":          resourceNetboxDeviceType(),
@@ -120,7 +114,7 @@ func Provider() *schema.Provider {
 			"netbox_tag":              dataSourceNetboxTag(),
 			"netbox_virtual_machines": dataSourceNetboxVirtualMachine(),
 			"netbox_interfaces":       dataSourceNetboxInterfaces(),
-			"netbox_ip_addresses":     dataSourceNetboxIpAddresses(),
+			"netbox_ip_addresses":     dataSourceNetboxIPAddresses(),
 			"netbox_ip_range":         dataSourceNetboxIpRange(),
 			"netbox_region":           dataSourceNetboxRegion(),
 			"netbox_vlan":             dataSourceNetboxVlan(),
@@ -175,13 +169,13 @@ func Provider() *schema.Provider {
 	return provider
 }
 
-func providerConfigure(ctx context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
+func providerConfigure(_ context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
 
 	config := Config{
 		APIToken:                    data.Get("api_token").(string),
-		AllowInsecureHttps:          data.Get("allow_insecure_https").(bool),
+		AllowInsecureHTTPS:          data.Get("allow_insecure_https").(bool),
 		Headers:                     data.Get("headers").(map[string]interface{}),
 		RequestTimeout:              data.Get("request_timeout").(int),
 		StripTrailingSlashesFromURL: data.Get("strip_trailing_slashes_from_url").(bool),
@@ -195,7 +189,7 @@ func providerConfigure(ctx context.Context, data *schema.ResourceData) (interfac
 	stripTrailingSlashesFromURL := data.Get("strip_trailing_slashes_from_url").(bool)
 
 	if stripTrailingSlashesFromURL {
-		var trimmed bool = false
+		var trimmed = false
 
 		// This is Go's poor man's while loop
 		for strings.HasSuffix(serverURL, "/") {
@@ -216,33 +210,6 @@ func providerConfigure(ctx context.Context, data *schema.ResourceData) (interfac
 	netboxClient, clientError := config.Client()
 	if clientError != nil {
 		return nil, diag.FromErr(clientError)
-	}
-
-	// Unless explicitly switched off, use the client to retrieve the Netbox version
-	// so we can determine compatibility of the provider with the used Netbox
-	skipVersionCheck := data.Get("skip_version_check").(bool)
-
-	if !skipVersionCheck {
-		req := status.NewStatusListParams()
-		res, err := netboxClient.(*client.NetBoxAPI).Status.StatusList(req, nil)
-
-		if err != nil {
-			return nil, diag.FromErr(err)
-		}
-
-		netboxVersion := res.GetPayload().(map[string]interface{})["netbox-version"].(string)
-
-		supportedVersions := []string{"3.3.0", "3.3.1", "3.3.2", "3.3.3", "3.3.4", "3.3.5", "3.3.6", "3.3.7", "3.3.8", "3.3.9", "3.3.10", "3.4.0", "3.4.1", "3.4.2", "3.4.3"}
-
-		if !slices.Contains(supportedVersions, netboxVersion) {
-
-			// Currently, there is no way to test these warnings. There is an issue to track this: https://github.com/hashicorp/terraform-plugin-sdk/issues/864
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  "Possibly unsupported Netbox version",
-				Detail:   fmt.Sprintf("Your Netbox version is v%v. The provider was successfully tested against the following versions:\n\n  %v\n\nUnexpected errors may occur.", netboxVersion, strings.Join(supportedVersions, ", ")),
-			})
-		}
 	}
 
 	return netboxClient, diags

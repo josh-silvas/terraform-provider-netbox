@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/circuits"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/circuits"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxCircuitTermination() *schema.Resource {
@@ -82,7 +82,7 @@ func resourceNetboxCircuitTerminationCreate(d *schema.ResourceData, m interface{
 		data.UpstreamSpeed = int64ToPtr(int64(upstreamspeedValue.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	ct, ok := d.GetOk(customFieldsKey)
 	if ok {
@@ -120,37 +120,59 @@ func resourceNetboxCircuitTerminationRead(d *schema.ResourceData, m interface{})
 
 	term := res.GetPayload()
 
-	d.Set("term_side", term.TermSide)
+	if err := d.Set("term_side", term.TermSide); err != nil {
+		return err
+	}
 
 	if term.Circuit != nil {
-		d.Set("circuit_id", term.Circuit.ID)
+		if err := d.Set("circuit_id", term.Circuit.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("circuit_id", nil)
+		if err := d.Set("circuit_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if term.Site != nil {
-		d.Set("site_id", term.Site.ID)
+		if err := d.Set("site_id", term.Site.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("site_id", nil)
+		if err := d.Set("site_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if term.PortSpeed != nil {
-		d.Set("port_speed", term.PortSpeed)
+		if err := d.Set("port_speed", term.PortSpeed); err != nil {
+			return err
+		}
 	} else {
-		d.Set("port_speed", nil)
+		if err := d.Set("port_speed", nil); err != nil {
+			return err
+		}
 	}
 
 	if term.UpstreamSpeed != nil {
-		d.Set("upstream_speed", term.UpstreamSpeed)
+		if err := d.Set("upstream_speed", term.UpstreamSpeed); err != nil {
+			return err
+		}
 	} else {
-		d.Set("upstream_speed", nil)
+		if err := d.Set("upstream_speed", nil); err != nil {
+			return err
+		}
 	}
 
-	d.Set(tagsKey, getTagListFromNestedTagList(term.Tags))
+	if err := d.Set(tagsKey, getTagListFromNestedTagList(term.Tags)); err != nil {
+		return err
+	}
 
 	cf := getCustomFields(term.CustomFields)
 	if cf != nil {
-		d.Set(customFieldsKey, cf)
+		if err := d.Set(customFieldsKey, cf); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -185,7 +207,7 @@ func resourceNetboxCircuitTerminationUpdate(d *schema.ResourceData, m interface{
 		data.UpstreamSpeed = int64ToPtr(int64(upstreamspeedValue.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	cf, ok := d.GetOk(customFieldsKey)
 	if ok {

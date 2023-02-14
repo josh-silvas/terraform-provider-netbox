@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/virtualization"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/virtualization"
 )
 
 func dataSourceNetboxCluster() *schema.Resource {
@@ -60,23 +60,36 @@ func dataSourceNetboxClusterRead(d *schema.ResourceData, m interface{}) error {
 		return errors.New("no result")
 	}
 	result := res.GetPayload().Results[0]
-	d.Set("cluster_id", result.ID)
+	if err := d.Set("cluster_id", result.ID); err != nil {
+		return err
+	}
 	d.SetId(strconv.FormatInt(result.ID, 10))
-	d.Set("name", result.Name)
-	d.Set("cluster_type_id", result.Type.ID)
+	if err := d.Set("name", result.Name); err != nil {
+		return err
+	}
+	if err := d.Set("cluster_type_id", result.Type.ID); err != nil {
+		return err
+	}
 
 	if result.Group != nil {
-		d.Set("cluster_group_id", result.Group.ID)
+		if err := d.Set("cluster_group_id", result.Group.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("cluster_group_id", nil)
+		if err := d.Set("cluster_group_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if result.Site != nil {
-		d.Set("site_id", result.Site.ID)
+		if err := d.Set("site_id", result.Site.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("site_id", nil)
+		if err := d.Set("site_id", nil); err != nil {
+			return err
+		}
 	}
 
-	d.Set(tagsKey, getTagListFromNestedTagList(result.Tags))
-	return nil
+	return d.Set(tagsKey, getTagListFromNestedTagList(result.Tags))
 }

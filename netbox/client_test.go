@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	netboxClient "github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/status"
+	netboxClient "github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/status"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,7 +38,7 @@ func TestURLMaleformedUrlShouldFail(t *testing.T) {
 
 	config := Config{
 		APIToken:  "07b12b765127747e4afd56cb531b7bf9c61f3c30",
-		ServerURL: "xyz:/localhost:8080",
+		ServerURL: "123:/localhost:8080",
 	}
 
 	_, err := config.Client()

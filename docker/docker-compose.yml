@@ -1,51 +1,27 @@
 ---
 version: "3.7"
 services:
+
   postgres:
-    image: postgres:12-alpine
-    environment:
-      - POSTGRES_USER=netbox
-      - POSTGRES_PASSWORD=netbox
-      - POSTGRES_DB=netbox
+    image: "postgres:12-alpine"
+    env_file:
+      - ".env"
+
   redis:
-    image: redis:6-alpine
+    image: "redis:6-alpine"
+
   netbox:
-    image: netboxcommunity/netbox:${NETBOX_VERSION}
+    image: "netboxcommunity/netbox:${NETBOX_VERSION}"
     depends_on:
-      - postgres
-      - redis
+      - "postgres"
+      - "redis"
     ports:
-      - 8001:8080
-    environment:
-      - CORS_ORIGIN_ALLOW_ALL=True
-      - DB_NAME=netbox
-      - DB_USER=netbox
-      - DB_PASSWORD=netbox
-      - DB_HOST=postgres
-      - REDIS_HOST=redis
-      - REDIS_DATABASE=0
-      - REDIS_SSL=false
-      - REDIS_CACHE_HOST=redis
-      - REDIS_CACHE_DATABASE=1
-      - REDIS_CACHE_SSL=false
-      - SECRET_KEY=foobar
-      - SKIP_STARTUP_SCRIPTS=false
-      - SKIP_SUPERUSER=false
-      - SUPERUSER_NAME=admin
-      - SUPERUSER_EMAIL=admin@example.com
-      - SUPERUSER_PASSWORD=admin
-      - SUPERUSER_API_TOKEN=${NETBOX_API_TOKEN}
+      - "8001:8080"
+    env_file:
+      - ".env"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/metrics"]
-      interval: 10s
-      timeout: 10s
+      interval: "10s"
+      timeout: "10s"
       retries: 10
-      start_period: 5s
-
-  wait:
-    build:
-      context: .
-      dockerfile: Dockerfile-wait
-    depends_on:
-      - netbox
-    command: wait-for netbox:8080 --timeout 240 -- echo "Netbox is up and running"
+      start_period: "5s"

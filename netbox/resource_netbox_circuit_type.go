@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/circuits"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/circuits"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxCircuitType() *schema.Resource {
@@ -86,10 +86,11 @@ func resourceNetboxCircuitTypeRead(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("slug", res.GetPayload().Slug)
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
 
-	return nil
+	return d.Set("slug", res.GetPayload().Slug)
 }
 
 func resourceNetboxCircuitTypeUpdate(d *schema.ResourceData, m interface{}) error {

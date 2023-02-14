@@ -1,4 +1,7 @@
-# terraform-provider-netbox
+# Terraform Provider for NetBox
+
+> NOTE: Forked from the original [e-breuninger/terraform-provider-netbox](https://github.com/e-breuninger/terraform-provider-netbox)
+> In order to support the netbox-community go-netbox library and legacy versions of NetBox.
 
 The Terraform Netbox provider is a plugin for Terraform that allows for the full lifecycle management of [Netbox](https://netbox.readthedocs.io/en/stable/) resources.
 This provider is maintained by E. Breuninger.
@@ -17,7 +20,7 @@ Netbox often makes breaking API changes even in non-major releases. Check the ta
 Since version [1.6.6](https://github.com/e-breuninger/terraform-provider-netbox/commit/0b0b2fffa54d4ab2e5f1677e948b01e56ba211c8), each version of the provider has a built-in list of all Netbox versions it supports at release time. Upon initialization, the provider will probe your Netbox version and include a (non-blocking) warning if the used Netbox version is not supported.
 
 | Provider version | Netbox version |
-| ---------------- | -------------- |
+|------------------|----------------|
 | v3.0.x           | v3.3.0 and up  |
 | v2.0.x           | v3.2.0 and up  |
 | v1.6.x and up    | v3.1.9         |
@@ -31,8 +34,8 @@ Since version [1.6.6](https://github.com/e-breuninger/terraform-provider-netbox/
 ## Building The Provider
 
 1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the Go `install` command:
+2. Enter the repository directory
+3. Build the provider using the Go `install` command:
 
 ```sh
 go install

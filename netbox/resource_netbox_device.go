@@ -4,12 +4,12 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxDevice() *schema.Resource {
@@ -152,7 +152,7 @@ func resourceNetboxDeviceCreate(ctx context.Context, d *schema.ResourceData, m i
 		data.CustomFields = ct
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := dcim.NewDcimDevicesCreateParams().WithData(&data)
 
@@ -166,101 +166,144 @@ func resourceNetboxDeviceCreate(ctx context.Context, d *schema.ResourceData, m i
 	return resourceNetboxDeviceRead(ctx, d, m)
 }
 
-func resourceNetboxDeviceRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceNetboxDeviceRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	api := m.(*client.NetBoxAPI)
 
 	var diags diag.Diagnostics
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	params := dcim.NewDcimDevicesReadParams().WithID(id)
 
 	res, err := api.Dcim.DcimDevicesRead(params, nil)
 	if err != nil {
-		errorcode := err.(*dcim.DcimDevicesReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return diag.FromErr(err)
 	}
 
 	device := res.GetPayload()
 
-	d.Set("name", device.Name)
+	if err := d.Set("name", device.Name); err != nil {
+		return nil
+	}
 
 	if device.DeviceType != nil {
-		d.Set("device_type_id", device.DeviceType.ID)
+		if err := d.Set("device_type_id", device.DeviceType.ID); err != nil {
+			return nil
+		}
 	}
 
 	if device.PrimaryIp4 != nil {
-		d.Set("primary_ipv4", device.PrimaryIp4.ID)
+		if err := d.Set("primary_ipv4", device.PrimaryIp4.ID); err != nil {
+			return nil
+		}
 	} else {
-		d.Set("primary_ipv4", nil)
+		if err := d.Set("primary_ipv4", nil); err != nil {
+			return nil
+		}
 	}
 
 	if device.PrimaryIp6 != nil {
-		d.Set("primary_ipv6", device.PrimaryIp6.ID)
+		if err := d.Set("primary_ipv6", device.PrimaryIp6.ID); err != nil {
+			return nil
+		}
 	} else {
-		d.Set("primary_ipv6", nil)
+		if err := d.Set("primary_ipv6", nil); err != nil {
+			return nil
+		}
 	}
 
 	if device.Tenant != nil {
-		d.Set("tenant_id", device.Tenant.ID)
+		if err := d.Set("tenant_id", device.Tenant.ID); err != nil {
+			return nil
+		}
 	} else {
-		d.Set("tenant_id", nil)
+		if err := d.Set("tenant_id", nil); err != nil {
+			return nil
+		}
 	}
 
 	if device.Platform != nil {
-		d.Set("platform_id", device.Platform.ID)
+		if err := d.Set("platform_id", device.Platform.ID); err != nil {
+			return nil
+		}
 	} else {
-		d.Set("platform_id", nil)
+		if err := d.Set("platform_id", nil); err != nil {
+			return nil
+		}
 	}
 
 	if device.Location != nil {
-		d.Set("location_id", device.Location.ID)
+		if err := d.Set("location_id", device.Location.ID); err != nil {
+			return nil
+		}
 	} else {
-		d.Set("location_id", nil)
+		if err := d.Set("location_id", nil); err != nil {
+			return nil
+		}
 	}
 
 	if device.Cluster != nil {
-		d.Set("cluster_id", device.Cluster.ID)
+		if err := d.Set("cluster_id", device.Cluster.ID); err != nil {
+			return nil
+		}
 	} else {
-		d.Set("cluster_id", nil)
+		if err := d.Set("cluster_id", nil); err != nil {
+			return nil
+		}
 	}
 
 	if device.DeviceRole != nil {
-		d.Set("role_id", device.DeviceRole.ID)
+		if err := d.Set("role_id", device.DeviceRole.ID); err != nil {
+			return nil
+		}
 	} else {
-		d.Set("role_id", nil)
+		if err := d.Set("role_id", nil); err != nil {
+			return nil
+		}
 	}
 
 	if device.Site != nil {
-		d.Set("site_id", device.Site.ID)
+		if err := d.Set("site_id", device.Site.ID); err != nil {
+			return nil
+		}
 	} else {
-		d.Set("site_id", nil)
+		if err := d.Set("site_id", nil); err != nil {
+			return nil
+		}
 	}
 
 	cf := getCustomFields(res.GetPayload().CustomFields)
 	if cf != nil {
-		d.Set(customFieldsKey, cf)
+		if err := d.Set(customFieldsKey, cf); err != nil {
+			return nil
+		}
 	}
 
-	d.Set("comments", device.Comments)
-
-	d.Set("serial", device.Serial)
-
-	d.Set("status", device.Status.Value)
-
-	d.Set(tagsKey, getTagListFromNestedTagList(device.Tags))
+	if err := d.Set("comments", device.Comments); err != nil {
+		return nil
+	}
+	if err := d.Set("serial", device.Serial); err != nil {
+		return nil
+	}
+	if err := d.Set("status", device.Status.Value); err != nil {
+		return nil
+	}
+	if err := d.Set(tagsKey, getTagListFromNestedTagList(device.Tags)); err != nil {
+		return nil
+	}
 	return diags
 }
 
 func resourceNetboxDeviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	data := models.WritableDeviceWithConfigContext{}
 
 	name := d.Get("name").(string)
@@ -337,14 +380,14 @@ func resourceNetboxDeviceUpdate(ctx context.Context, d *schema.ResourceData, m i
 		data.CustomFields = cf
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	if d.HasChanges("comments") {
 		// check if comment is set
 		commentsValue, ok := d.GetOk("comments")
 		comments := ""
 		if !ok {
-			// Setting an space string deletes the comment
+			// Setting a space string deletes the comment
 			comments = " "
 		} else {
 			comments = commentsValue.(string)
@@ -357,7 +400,7 @@ func resourceNetboxDeviceUpdate(ctx context.Context, d *schema.ResourceData, m i
 		serialValue, ok := d.GetOk("serial")
 		serial := ""
 		if !ok {
-			// Setting an space string deletes the serial
+			// Setting a space string deletes the serial
 			serial = " "
 		} else {
 			serial = serialValue.(string)
@@ -367,24 +410,27 @@ func resourceNetboxDeviceUpdate(ctx context.Context, d *schema.ResourceData, m i
 
 	params := dcim.NewDcimDevicesUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Dcim.DcimDevicesUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimDevicesUpdate(params, nil); err != nil {
 		return diag.FromErr(err)
 	}
 
 	return resourceNetboxDeviceRead(ctx, d, m)
 }
 
-func resourceNetboxDeviceDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceNetboxDeviceDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	api := m.(*client.NetBoxAPI)
 
 	var diags diag.Diagnostics
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	params := dcim.NewDcimDevicesDeleteParams().WithID(id)
 
-	_, err := api.Dcim.DcimDevicesDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimDevicesDelete(params, nil); err != nil {
 		return diag.FromErr(err)
 	}
 	return diags

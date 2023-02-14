@@ -3,10 +3,10 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/virtualization"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/virtualization"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxCluster() *schema.Resource {
@@ -77,7 +77,7 @@ func resourceNetboxClusterCreate(d *schema.ResourceData, m interface{}) error {
 		data.Tenant = &tenantID
 	}
 
-	tags, _ := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	tags := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 	data.Tags = tags
 
 	params := virtualization.NewVirtualizationClustersCreateParams().WithData(&data)
@@ -95,49 +95,64 @@ func resourceNetboxClusterCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxClusterRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := virtualization.NewVirtualizationClustersReadParams().WithID(id)
 
 	res, err := api.Virtualization.VirtualizationClustersRead(params, nil)
 	if err != nil {
-		errorcode := err.(*virtualization.VirtualizationClustersReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("cluster_type_id", res.GetPayload().Type.ID)
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
+	if err := d.Set("cluster_type_id", res.GetPayload().Type.ID); err != nil {
+		return err
+	}
 
 	if res.GetPayload().Group != nil {
-		d.Set("cluster_group_id", res.GetPayload().Group.ID)
+		if err := d.Set("cluster_group_id", res.GetPayload().Group.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("cluster_group_id", nil)
+		if err := d.Set("cluster_group_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Site != nil {
-		d.Set("site_id", res.GetPayload().Site.ID)
+		if err := d.Set("site_id", res.GetPayload().Site.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("site_id", nil)
+		if err := d.Set("site_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Tenant != nil {
-		d.Set("tenant_id", res.GetPayload().Tenant.ID)
+		if err := d.Set("tenant_id", res.GetPayload().Tenant.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("tenant_id", nil)
+		if err := d.Set("tenant_id", nil); err != nil {
+			return err
+		}
 	}
 
-	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
-	return nil
+	return d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
 }
 
 func resourceNetboxClusterUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableCluster{}
 
 	name := d.Get("name").(string)
@@ -161,13 +176,13 @@ func resourceNetboxClusterUpdate(d *schema.ResourceData, m interface{}) error {
 		data.Tenant = &tenantID
 	}
 
-	tags, _ := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	tags := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 	data.Tags = tags
 
 	params := virtualization.NewVirtualizationClustersPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Virtualization.VirtualizationClustersPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Virtualization.VirtualizationClustersPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -177,11 +192,14 @@ func resourceNetboxClusterUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxClusterDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := virtualization.NewVirtualizationClustersDeleteParams().WithID(id)
 
-	_, err := api.Virtualization.VirtualizationClustersDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Virtualization.VirtualizationClustersDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

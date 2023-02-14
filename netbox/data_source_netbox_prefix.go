@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
 )
 
 func dataSourceNetboxPrefix() *schema.Resource {
@@ -97,31 +97,27 @@ func dataSourceNetboxPrefixRead(d *schema.ResourceData, m interface{}) error {
 		params.Prefix = &cidr
 	}
 
-	if description, ok := d.Get("description").(string); ok && description != "" {
-		params.Description = &description
-	}
-
 	if prefix, ok := d.Get("prefix").(string); ok && prefix != "" {
 		params.Prefix = &prefix
 	}
 
-	if vrfId, ok := d.Get("vrf_id").(int); ok && vrfId != 0 {
+	if vrfID, ok := d.Get("vrf_id").(int); ok && vrfID != 0 {
 		// Note that vrf_id is a string pointer in the netbox filter, but we use a number in the provider
-		params.VrfID = strToPtr(strconv.Itoa(vrfId))
+		params.VrfID = strToPtr(strconv.Itoa(vrfID))
 	}
 
-	if vlanId, ok := d.Get("vlan_id").(int); ok && vlanId != 0 {
+	if vlanID, ok := d.Get("vlan_id").(int); ok && vlanID != 0 {
 		// Note that vlan_id is a string pointer in the netbox filter, but we use a number in the provider
-		params.VlanID = strToPtr(strconv.Itoa(vlanId))
+		params.VlanID = strToPtr(strconv.Itoa(vlanID))
 	}
 
 	if vlanVid, ok := d.Get("vlan_vid").(float64); ok && vlanVid != 0 {
 		params.VlanVid = &vlanVid
 	}
 
-	if siteId, ok := d.Get("site_id").(int); ok && siteId != 0 {
+	if siteID, ok := d.Get("site_id").(int); ok && siteID != 0 {
 		// Note that site_id is a string pointer in the netbox filter, but we use a number in the provider
-		params.SiteID = strToPtr(strconv.Itoa(siteId))
+		params.SiteID = strToPtr(strconv.Itoa(siteID))
 	}
 
 	if tag, ok := d.Get("tag").(string); ok && tag != "" {
@@ -141,22 +137,42 @@ func dataSourceNetboxPrefixRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	result := res.GetPayload().Results[0]
-	d.Set("id", result.ID)
-	d.Set("cidr", result.Prefix)
-	d.Set("prefix", result.Prefix)
-	d.Set("status", result.Status.Value)
-	d.Set("description", result.Description)
-	d.Set("tags", getTagListFromNestedTagList(result.Tags))
+	if err := d.Set("id", result.ID); err != nil {
+		return err
+	}
+	if err := d.Set("cidr", result.Prefix); err != nil {
+		return err
+	}
+	if err := d.Set("prefix", result.Prefix); err != nil {
+		return err
+	}
+	if err := d.Set("status", result.Status.Value); err != nil {
+		return err
+	}
+	if err := d.Set("description", result.Description); err != nil {
+		return err
+	}
+	if err := d.Set("tags", getTagListFromNestedTagList(result.Tags)); err != nil {
+		return err
+	}
 
 	if result.Vrf != nil {
-		d.Set("vrf_id", result.Vrf.ID)
+		if err := d.Set("vrf_id", result.Vrf.ID); err != nil {
+			return err
+		}
 	}
 	if result.Vlan != nil {
-		d.Set("vlan_vid", result.Vlan.Vid)
-		d.Set("vlan_id", result.Vlan.ID)
+		if err := d.Set("vlan_vid", result.Vlan.Vid); err != nil {
+			return err
+		}
+		if err := d.Set("vlan_id", result.Vlan.ID); err != nil {
+			return err
+		}
 	}
 	if result.Site != nil {
-		d.Set("site_id", result.Site.ID)
+		if err := d.Set("site_id", result.Site.ID); err != nil {
+			return err
+		}
 	}
 	d.SetId(strconv.FormatInt(result.ID, 10))
 	return nil

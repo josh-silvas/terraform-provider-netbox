@@ -1,6 +1,7 @@
 *.dll
 *.exe
 .envrc
+develop/.env
 .DS_Store
 example.tf
 terraform.tfplan

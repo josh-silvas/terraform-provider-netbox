@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxAggregate() *schema.Resource {
@@ -64,7 +64,7 @@ func resourceNetboxAggregateCreate(d *schema.ResourceData, m interface{}) error 
 		data.Rir = int64ToPtr(int64(rirID.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamAggregatesCreateParams().WithData(&data)
 	res, err := api.Ipam.IpamAggregatesCreate(params, nil)
@@ -92,26 +92,36 @@ func resourceNetboxAggregateRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("description", res.GetPayload().Description)
+	if err := d.Set("description", res.GetPayload().Description); err != nil {
+		return err
+	}
 	if res.GetPayload().Prefix != nil {
-		d.Set("prefix", res.GetPayload().Prefix)
+		if err := d.Set("prefix", res.GetPayload().Prefix); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Tenant != nil {
-		d.Set("tenant_id", res.GetPayload().Tenant.ID)
+		if err := d.Set("tenant_id", res.GetPayload().Tenant.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("tenant_id", nil)
+		if err := d.Set("tenant_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Rir != nil {
-		d.Set("rir_id", res.GetPayload().Rir.ID)
+		if err := d.Set("rir_id", res.GetPayload().Rir.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("rir_id", nil)
+		if err := d.Set("rir_id", nil); err != nil {
+			return err
+		}
 	}
 
-	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
-
-	return nil
+	return d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
 }
 
 func resourceNetboxAggregateUpdate(d *schema.ResourceData, m interface{}) error {
@@ -132,7 +142,7 @@ func resourceNetboxAggregateUpdate(d *schema.ResourceData, m interface{}) error 
 		data.Rir = int64ToPtr(int64(rirID.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamAggregatesUpdateParams().WithID(id).WithData(&data)
 	_, err := api.Ipam.IpamAggregatesUpdate(params, nil)

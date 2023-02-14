@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
 )
 
 func dataSourceNetboxVrf() *schema.Resource {
@@ -48,11 +48,11 @@ func dataSourceNetboxVrfRead(d *schema.ResourceData, m interface{}) error {
 	}
 	result := res.GetPayload().Results[0]
 	d.SetId(strconv.FormatInt(result.ID, 10))
-	d.Set("name", result.Name)
-	if result.Tenant != nil {
-		d.Set("tenant_id", result.Tenant.ID)
-	} else {
-		d.Set("tenant_id", nil)
+	if err := d.Set("name", result.Name); err != nil {
+		return err
 	}
-	return nil
+	if result.Tenant != nil {
+		return d.Set("tenant_id", result.Tenant.ID)
+	}
+	return d.Set("tenant_id", nil)
 }

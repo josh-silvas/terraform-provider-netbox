@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
 )
 
 func dataSourceNetboxVlan() *schema.Resource {
@@ -87,22 +87,36 @@ func dataSourceNetboxVlanRead(d *schema.ResourceData, m interface{}) error {
 	vlan := res.GetPayload().Results[0]
 
 	d.SetId(strconv.FormatInt(vlan.ID, 10))
-	d.Set("vid", vlan.Vid)
-	d.Set("name", vlan.Name)
-	d.Set("status", vlan.Status.Value)
-	d.Set("description", vlan.Description)
+	if err := d.Set("vid", vlan.Vid); err != nil {
+		return err
+	}
+	if err := d.Set("name", vlan.Name); err != nil {
+		return err
+	}
+	if err := d.Set("status", vlan.Status.Value); err != nil {
+		return err
+	}
+	if err := d.Set("description", vlan.Description); err != nil {
+		return err
+	}
 
 	if vlan.Group != nil {
-		d.Set("group_id", vlan.Group.ID)
+		if err := d.Set("group_id", vlan.Group.ID); err != nil {
+			return err
+		}
 	}
 	if vlan.Role != nil {
-		d.Set("role", vlan.Role.ID)
+		if err := d.Set("role", vlan.Role.ID); err != nil {
+			return err
+		}
 	}
 	if vlan.Site != nil {
-		d.Set("site", vlan.Site.ID)
+		if err := d.Set("site", vlan.Site.ID); err != nil {
+			return err
+		}
 	}
 	if vlan.Tenant != nil {
-		d.Set("tenant", vlan.Tenant.ID)
+		return d.Set("tenant", vlan.Tenant.ID)
 	}
 
 	return nil

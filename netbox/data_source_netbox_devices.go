@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func dataSourceNetboxDevices() *schema.Resource {
@@ -86,6 +86,10 @@ func dataSourceNetboxDevices() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"primary_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"name": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -141,18 +145,21 @@ func dataSourceNetboxDevicesRead(d *schema.ResourceData, m interface{}) error {
 			case "name":
 				var nameString = v.(string)
 				params.Name = &nameString
+			case "platform":
+				var platformString = v.(string)
+				params.Platform = &platformString
 			case "region":
 				var regionString = v.(string)
 				params.Region = &regionString
 			case "role_id":
-				var roleIdString = v.(string)
-				params.RoleID = &roleIdString
+				var roleIDString = v.(string)
+				params.RoleID = &roleIDString
 			case "site_id":
-				var siteIdString = v.(string)
-				params.SiteID = &siteIdString
+				var siteIDString = v.(string)
+				params.SiteID = &siteIDString
 			case "tenant_id":
-				var tenantIdString = v.(string)
-				params.TenantID = &tenantIdString
+				var tenantIDString = v.(string)
+				params.TenantID = &tenantIDString
 			default:
 				return fmt.Errorf("'%s' is not a supported filter parameter", k)
 			}
@@ -194,6 +201,10 @@ func dataSourceNetboxDevicesRead(d *schema.ResourceData, m interface{}) error {
 			mapping["comments"] = device.Comments
 		}
 		mapping["device_id"] = device.ID
+
+		if device.PrimaryIP != nil {
+			mapping["primary_ip"] = *device.PrimaryIP.Address
+		}
 		if device.DeviceType != nil {
 			mapping["device_type_id"] = device.DeviceType.ID
 		}

@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/tenancy"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/tenancy"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxTenant() *schema.Resource {
@@ -54,7 +54,7 @@ func resourceNetboxTenantCreate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
 	name := d.Get("name").(string)
-	group_id := int64(d.Get("group_id").(int))
+	groupID := int64(d.Get("group_id").(int))
 	description := d.Get("description").(string)
 
 	slugValue, slugOk := d.GetOk("slug")
@@ -65,18 +65,14 @@ func resourceNetboxTenantCreate(d *schema.ResourceData, m interface{}) error {
 	} else {
 		slug = slugValue.(string)
 	}
-
-	tags, _ := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	data := &models.WritableTenant{}
 
 	data.Name = &name
 	data.Slug = &slug
 	data.Description = description
-	data.Tags = tags
 
-	if group_id != 0 {
-		data.Group = &group_id
+	if groupID != 0 {
+		data.Group = &groupID
 	}
 
 	params := tenancy.NewTenancyTenantsCreateParams().WithData(data)
@@ -93,11 +89,15 @@ func resourceNetboxTenantCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxTenantRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := tenancy.NewTenancyTenantsReadParams().WithID(id)
 
 	res, err := api.Tenancy.TenancyTenantsRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*tenancy.TenancyTenantsReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -107,11 +107,17 @@ func resourceNetboxTenantRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("slug", res.GetPayload().Slug)
-	d.Set("description", res.GetPayload().Description)
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
+	if err := d.Set("slug", res.GetPayload().Slug); err != nil {
+		return err
+	}
+	if err := d.Set("description", res.GetPayload().Description); err != nil {
+		return err
+	}
 	if res.GetPayload().Group != nil {
-		d.Set("group_id", res.GetPayload().Group.ID)
+		return d.Set("group_id", res.GetPayload().Group.ID)
 	}
 
 	return nil
@@ -120,12 +126,15 @@ func resourceNetboxTenantRead(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxTenantUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableTenant{}
 
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	group_id := int64(d.Get("group_id").(int))
+	groupID := int64(d.Get("group_id").(int))
 	slugValue, slugOk := d.GetOk("slug")
 	var slug string
 	// Default slug to generated slug if not given
@@ -134,21 +143,17 @@ func resourceNetboxTenantUpdate(d *schema.ResourceData, m interface{}) error {
 	} else {
 		slug = slugValue.(string)
 	}
-
-	tags, _ := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	data.Slug = &slug
 	data.Name = &name
 	data.Description = description
-	data.Tags = tags
-	if group_id != 0 {
-		data.Group = &group_id
+	if groupID != 0 {
+		data.Group = &groupID
 	}
 
 	params := tenancy.NewTenancyTenantsPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Tenancy.TenancyTenantsPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Tenancy.TenancyTenantsPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -158,11 +163,14 @@ func resourceNetboxTenantUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxTenantDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := tenancy.NewTenancyTenantsDeleteParams().WithID(id)
 
-	_, err := api.Tenancy.TenancyTenantsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Tenancy.TenancyTenantsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

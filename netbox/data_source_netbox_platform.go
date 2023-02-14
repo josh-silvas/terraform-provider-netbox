@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
 )
 
 func dataSourceNetboxPlatform() *schema.Resource {
@@ -48,7 +48,8 @@ func dataSourceNetboxPlatformRead(d *schema.ResourceData, m interface{}) error {
 	}
 	result := res.GetPayload().Results[0]
 	d.SetId(strconv.FormatInt(result.ID, 10))
-	d.Set("name", result.Name)
-	d.Set("slug", result.Slug)
-	return nil
+	if err := d.Set("name", result.Name); err != nil {
+		return err
+	}
+	return d.Set("slug", result.Slug)
 }

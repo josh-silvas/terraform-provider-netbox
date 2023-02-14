@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxAvailablePrefix() *schema.Resource {
@@ -79,14 +79,18 @@ func resourceNetboxAvailablePrefix() *schema.Resource {
 		},
 		Importer: &schema.ResourceImporter{
 			StateContext: func(c context.Context, rd *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				parent_prefix_id, prefix_id, prefix_length, err := resourceNetboxAvailablePrefixParseImport(rd.Id())
+				parentPrefixID, prefixID, prefixLength, err := resourceNetboxAvailablePrefixParseImport(rd.Id())
 				if err != nil {
 					return nil, err
 				}
 
-				rd.Set("parent_prefix_id", parent_prefix_id)
-				rd.Set("prefix_length", prefix_length)
-				rd.SetId(prefix_id)
+				if err := rd.Set("parent_prefix_id", parentPrefixID); err != nil {
+					return nil, err
+				}
+				if err := rd.Set("prefix_length", prefixLength); err != nil {
+					return nil, err
+				}
+				rd.SetId(prefixID)
 
 				return []*schema.ResourceData{rd}, nil
 			},
@@ -94,34 +98,34 @@ func resourceNetboxAvailablePrefix() *schema.Resource {
 	}
 }
 
-func resourceNetboxAvailablePrefixParseImport(import_str string) (int, string, int, error) {
-	parts := strings.SplitN(import_str, " ", 3)
+func resourceNetboxAvailablePrefixParseImport(importStr string) (int, string, int, error) {
+	parts := strings.SplitN(importStr, " ", 3)
 
 	if len(parts) != 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" {
-		return 0, "", 0, fmt.Errorf("unexpected format of (%s), expected 'parent_prefix_id prefix_id prefix_length'", import_str)
+		return 0, "", 0, fmt.Errorf("unexpected format of (%s), expected 'parent_prefix_id prefix_id prefix_length'", importStr)
 	}
 
-	parent_id, err := strconv.Atoi(parts[0])
+	parentID, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return 0, "", 0, fmt.Errorf("parent_id (%s) is not an integer", parts[0])
 	}
-	prefix_length, err := strconv.Atoi(parts[2])
+	prefixLength, err := strconv.Atoi(parts[2])
 	if err != nil {
 		return 0, "", 0, fmt.Errorf("prefix_length (%s) is not an integer", parts[1])
 	}
 
-	return parent_id, parts[1], prefix_length, nil
+	return parentID, parts[1], prefixLength, nil
 }
 
 func resourceNetboxAvailablePrefixCreate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	parent_prefix_id := int64(d.Get("parent_prefix_id").(int))
-	prefix_length := int64(d.Get("prefix_length").(int))
+	parentPrefixID := int64(d.Get("parent_prefix_id").(int))
+	prefixLength := int64(d.Get("prefix_length").(int))
 	data := models.PrefixLength{
-		PrefixLength: &prefix_length,
+		PrefixLength: &prefixLength,
 	}
-	params := ipam.NewIpamPrefixesAvailablePrefixesCreateParams().WithID(parent_prefix_id).WithData(&data)
+	params := ipam.NewIpamPrefixesAvailablePrefixesCreateParams().WithID(parentPrefixID).WithData(&data)
 
 	res, err := api.Ipam.IpamPrefixesAvailablePrefixesCreate(params, nil)
 	if err != nil {
@@ -129,8 +133,10 @@ func resourceNetboxAvailablePrefixCreate(d *schema.ResourceData, m interface{}) 
 	}
 
 	payload := res.GetPayload()
-	d.SetId(strconv.FormatInt(payload.ID, 10))
-	d.Set("prefix", payload.Prefix)
+	d.SetId(strconv.FormatInt(payload[0].ID, 10))
+	if err := d.Set("prefix", payload[0].Prefix); err != nil {
+		return err
+	}
 
 	return resourceNetboxPrefixUpdate(d, m)
 }

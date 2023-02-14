@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/circuits"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/circuits"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxCircuit() *schema.Resource {
@@ -93,40 +93,53 @@ func resourceNetboxCircuitCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxCircuitRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := circuits.NewCircuitsCircuitsReadParams().WithID(id)
 
 	res, err := api.Circuits.CircuitsCircuitsRead(params, nil)
 
 	if err != nil {
-		errorcode := err.(*circuits.CircuitsCircuitsReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
-	d.Set("cid", res.GetPayload().Cid)
-	d.Set("status", res.GetPayload().Status.Value)
+	if err := d.Set("cid", res.GetPayload().Cid); err != nil {
+		return err
+	}
+	if err := d.Set("status", res.GetPayload().Status.Value); err != nil {
+		return err
+	}
 
 	if res.GetPayload().Provider != nil {
-		d.Set("provider_id", res.GetPayload().Provider.ID)
+		if err := d.Set("provider_id", res.GetPayload().Provider.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("provider_id", nil)
+		if err := d.Set("provider_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Type != nil {
-		d.Set("type_id", res.GetPayload().Type.ID)
+		if err := d.Set("type_id", res.GetPayload().Type.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("type_id", nil)
+		if err := d.Set("type_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Tenant != nil {
-		d.Set("tenant_id", res.GetPayload().Tenant.ID)
+		if err := d.Set("tenant_id", res.GetPayload().Tenant.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("tenant_id", nil)
+		if err := d.Set("tenant_id", nil); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -135,7 +148,10 @@ func resourceNetboxCircuitRead(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxCircuitUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableCircuit{}
 
 	cid := d.Get("cid").(string)
@@ -162,8 +178,8 @@ func resourceNetboxCircuitUpdate(d *schema.ResourceData, m interface{}) error {
 
 	params := circuits.NewCircuitsCircuitsPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Circuits.CircuitsCircuitsPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Circuits.CircuitsCircuitsPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -173,11 +189,14 @@ func resourceNetboxCircuitUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxCircuitDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := circuits.NewCircuitsCircuitsDeleteParams().WithID(id)
 
-	_, err := api.Circuits.CircuitsCircuitsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Circuits.CircuitsCircuitsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

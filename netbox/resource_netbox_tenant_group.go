@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/tenancy"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/tenancy"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxTenantGroup() *schema.Resource {
@@ -53,7 +53,7 @@ func resourceNetboxTenantGroupCreate(d *schema.ResourceData, m interface{}) erro
 	api := m.(*client.NetBoxAPI)
 
 	name := d.Get("name").(string)
-	parent_id := int64(d.Get("parent_id").(int))
+	parentID := int64(d.Get("parent_id").(int))
 	description := d.Get("description").(string)
 
 	slugValue, slugOk := d.GetOk("slug")
@@ -71,8 +71,8 @@ func resourceNetboxTenantGroupCreate(d *schema.ResourceData, m interface{}) erro
 	data.Description = description
 	data.Tags = []*models.NestedTag{}
 
-	if parent_id != 0 {
-		data.Parent = &parent_id
+	if parentID != 0 {
+		data.Parent = &parentID
 	}
 
 	params := tenancy.NewTenancyTenantGroupsCreateParams().WithData(data)
@@ -89,12 +89,16 @@ func resourceNetboxTenantGroupCreate(d *schema.ResourceData, m interface{}) erro
 
 func resourceNetboxTenantGroupRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 
 	params := tenancy.NewTenancyTenantGroupsReadParams().WithID(id)
 
 	res, err := api.Tenancy.TenancyTenantGroupsRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*tenancy.TenancyTenantGroupsReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -104,11 +108,17 @@ func resourceNetboxTenantGroupRead(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("slug", res.GetPayload().Slug)
-	d.Set("description", res.GetPayload().Description)
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
+	if err := d.Set("slug", res.GetPayload().Slug); err != nil {
+		return err
+	}
+	if err := d.Set("description", res.GetPayload().Description); err != nil {
+		return err
+	}
 	if res.GetPayload().Parent != nil {
-		d.Set("parent", res.GetPayload().Parent.ID)
+		return d.Set("parent", res.GetPayload().Parent.ID)
 	}
 	return nil
 }
@@ -116,12 +126,15 @@ func resourceNetboxTenantGroupRead(d *schema.ResourceData, m interface{}) error 
 func resourceNetboxTenantGroupUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableTenantGroup{}
 
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	parent_id := int64(d.Get("parent_id").(int))
+	parentID := int64(d.Get("parent_id").(int))
 
 	slugValue, slugOk := d.GetOk("slug")
 	var slug string
@@ -137,13 +150,13 @@ func resourceNetboxTenantGroupUpdate(d *schema.ResourceData, m interface{}) erro
 	data.Description = description
 	data.Tags = []*models.NestedTag{}
 
-	if parent_id != 0 {
-		data.Parent = &parent_id
+	if parentID != 0 {
+		data.Parent = &parentID
 	}
 	params := tenancy.NewTenancyTenantGroupsPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Tenancy.TenancyTenantGroupsPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Tenancy.TenancyTenantGroupsPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -153,11 +166,14 @@ func resourceNetboxTenantGroupUpdate(d *schema.ResourceData, m interface{}) erro
 func resourceNetboxTenantGroupDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := tenancy.NewTenancyTenantGroupsDeleteParams().WithID(id)
 
-	_, err := api.Tenancy.TenancyTenantGroupsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Tenancy.TenancyTenantGroupsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

@@ -4,12 +4,12 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxDeviceInterface() *schema.Resource {
@@ -85,32 +85,27 @@ func resourceNetboxDeviceInterface() *schema.Resource {
 	}
 }
 
-func resourceNetboxDeviceInterfaceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceNetboxDeviceInterfaceCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	api := m.(*client.NetBoxAPI)
 
 	var diags diag.Diagnostics
 
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	interface_type := d.Get("type").(string)
+	interfaceType := d.Get("type").(string)
 	enabled := d.Get("enabled").(bool)
 	mgmtonly := d.Get("mgmtonly").(bool)
 	mode := d.Get("mode").(string)
-	tags, diagnostics := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-	if diagnostics != nil {
-		diags = append(diags, diagnostics...)
-	}
 	taggedVlans := toInt64List(d.Get("tagged_vlans"))
 	deviceID := int64(d.Get("device_id").(int))
 
 	data := models.WritableInterface{
 		Name:         &name,
 		Description:  description,
-		Type:         &interface_type,
+		Type:         &interfaceType,
 		Enabled:      enabled,
 		MgmtOnly:     mgmtonly,
 		Mode:         mode,
-		Tags:         tags,
 		TaggedVlans:  taggedVlans,
 		Device:       &deviceID,
 		WirelessLans: []int64{},
@@ -137,9 +132,12 @@ func resourceNetboxDeviceInterfaceCreate(ctx context.Context, d *schema.Resource
 	return diags
 }
 
-func resourceNetboxDeviceInterfaceRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceNetboxDeviceInterfaceRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	var diags diag.Diagnostics
 
@@ -147,6 +145,7 @@ func resourceNetboxDeviceInterfaceRead(ctx context.Context, d *schema.ResourceDa
 
 	res, err := api.Dcim.DcimInterfacesRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*dcim.DcimInterfacesReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -158,55 +157,74 @@ func resourceNetboxDeviceInterfaceRead(ctx context.Context, d *schema.ResourceDa
 
 	iface := res.GetPayload()
 
-	d.Set("name", iface.Name)
-	d.Set("description", iface.Description)
-	d.Set("type", iface.Type.Value)
-	d.Set("enabled", iface.Enabled)
-	d.Set("mgmtonly", iface.MgmtOnly)
-	d.Set("mac_address", iface.MacAddress)
-	d.Set("mtu", iface.Mtu)
-	d.Set(tagsKey, getTagListFromNestedTagList(iface.Tags))
-	d.Set("tagged_vlans", getIDsFromNestedVLANDevice(iface.TaggedVlans))
-	d.Set("device_id", iface.Device.ID)
+	if err := d.Set("name", iface.Name); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("description", iface.Description); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("type", iface.Type.Value); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("enabled", iface.Enabled); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("mgmtonly", iface.MgmtOnly); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("mac_address", iface.MacAddress); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("mtu", iface.Mtu); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("tagged_vlans", getIDsFromNestedVLANDevice(iface.TaggedVlans)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("device_id", iface.Device.ID); err != nil {
+		return diag.FromErr(err)
+	}
 
 	if iface.Mode != nil {
-		d.Set("mode", iface.Mode.Value)
+		if err := d.Set("mode", iface.Mode.Value); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	if iface.UntaggedVlan != nil {
-		d.Set("untagged_vlan", iface.UntaggedVlan.ID)
+		if err := d.Set("untagged_vlan", iface.UntaggedVlan.ID); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags
 }
 
-func resourceNetboxDeviceInterfaceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceNetboxDeviceInterfaceUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	api := m.(*client.NetBoxAPI)
 
 	var diags diag.Diagnostics
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	interface_type := d.Get("type").(string)
+	interfaceType := d.Get("type").(string)
 	enabled := d.Get("enabled").(bool)
 	mgmtonly := d.Get("mgmtonly").(bool)
 	mode := d.Get("mode").(string)
-	tags, diagnostics := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-	if diagnostics != nil {
-		diags = append(diags, diagnostics...)
-	}
 	taggedVlans := toInt64List(d.Get("tagged_vlans"))
 	deviceID := int64(d.Get("device_id").(int))
 
 	data := models.WritableInterface{
 		Name:         &name,
 		Description:  description,
-		Type:         &interface_type,
+		Type:         &interfaceType,
 		Enabled:      enabled,
 		MgmtOnly:     mgmtonly,
 		Mode:         mode,
-		Tags:         tags,
 		TaggedVlans:  taggedVlans,
 		Device:       &deviceID,
 		WirelessLans: []int64{},
@@ -226,22 +244,25 @@ func resourceNetboxDeviceInterfaceUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	params := dcim.NewDcimInterfacesPartialUpdateParams().WithID(id).WithData(&data)
-	_, err := api.Dcim.DcimInterfacesPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimInterfacesPartialUpdate(params, nil); err != nil {
 		return diag.FromErr(err)
 	}
 
 	return diags
 }
 
-func resourceNetboxDeviceInterfaceDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceNetboxDeviceInterfaceDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	params := dcim.NewDcimInterfacesDeleteParams().WithID(id)
 
-	_, err := api.Dcim.DcimInterfacesDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimInterfacesDelete(params, nil); err != nil {
 		return diag.FromErr(err)
 	}
 	return nil

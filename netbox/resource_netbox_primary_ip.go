@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/virtualization"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/virtualization"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxPrimaryIP() *schema.Resource {
@@ -49,34 +49,36 @@ func resourceNetboxPrimaryIPCreate(d *schema.ResourceData, m interface{}) error 
 
 func resourceNetboxPrimaryIPRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := virtualization.NewVirtualizationVirtualMachinesReadParams().WithID(id)
 
 	res, err := api.Virtualization.VirtualizationVirtualMachinesRead(params, nil)
 	if err != nil {
-		errorcode := err.(*virtualization.VirtualizationVirtualMachinesReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
 	IPAddressVersion := d.Get("ip_address_version")
-	d.Set("ip_address_version", IPAddressVersion)
+	if err := d.Set("ip_address_version", IPAddressVersion); err != nil {
+		return err
+	}
 
 	if IPAddressVersion == 4 && res.GetPayload().PrimaryIp4 != nil {
-		d.Set("ip_address_id", res.GetPayload().PrimaryIp4.ID)
+		if err := d.Set("ip_address_id", res.GetPayload().PrimaryIp4.ID); err != nil {
+			return err
+		}
 	} else if IPAddressVersion == 6 && res.GetPayload().PrimaryIp6 != nil {
-		d.Set("ip_address_id", res.GetPayload().PrimaryIp6.ID)
+		if err := d.Set("ip_address_id", res.GetPayload().PrimaryIp6.ID); err != nil {
+			return err
+		}
 	} else {
 		// if the vm exists, but has no primary ip, consider this element deleted
 		d.SetId("")
 		return nil
 	}
-	d.Set("virtual_machine_id", res.GetPayload().ID)
-	return nil
+	return d.Set("virtual_machine_id", res.GetPayload().ID)
 }
 
 func resourceNetboxPrimaryIPUpdate(d *schema.ResourceData, m interface{}) error {
@@ -157,8 +159,8 @@ func resourceNetboxPrimaryIPUpdate(d *schema.ResourceData, m interface{}) error 
 
 	updateParams := virtualization.NewVirtualizationVirtualMachinesUpdateParams().WithID(virtualMachineID).WithData(&data)
 
-	_, err = api.Virtualization.VirtualizationVirtualMachinesUpdate(updateParams, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err = api.Virtualization.VirtualizationVirtualMachinesUpdate(updateParams, nil); err != nil {
 		return err
 	}
 	return resourceNetboxPrimaryIPRead(d, m)
@@ -166,6 +168,8 @@ func resourceNetboxPrimaryIPUpdate(d *schema.ResourceData, m interface{}) error 
 
 func resourceNetboxPrimaryIPDelete(d *schema.ResourceData, m interface{}) error {
 	// Set ip_address_id to minus one and go to update. Update will set nil
-	d.Set("ip_address_id", -1)
+	if err := d.Set("ip_address_id", -1); err != nil {
+		return err
+	}
 	return resourceNetboxPrimaryIPUpdate(d, m)
 }

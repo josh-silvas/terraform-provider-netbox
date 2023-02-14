@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxIPAddress() *schema.Resource {
@@ -81,8 +81,6 @@ func resourceNetboxIPAddressCreate(d *schema.ResourceData, m interface{}) error 
 		data.DNSName = dnsName.(string)
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	params := ipam.NewIpamIPAddressesCreateParams().WithData(&data)
 
 	res, err := api.Ipam.IpamIPAddressesCreate(params, nil)
@@ -98,11 +96,15 @@ func resourceNetboxIPAddressCreate(d *schema.ResourceData, m interface{}) error 
 func resourceNetboxIPAddressRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamIPAddressesReadParams().WithID(id)
 
 	res, err := api.Ipam.IpamIPAddressesRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*ipam.IpamIPAddressesReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -113,37 +115,60 @@ func resourceNetboxIPAddressRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if res.GetPayload().AssignedObjectID != nil {
-		d.Set("interface_id", res.GetPayload().AssignedObjectID)
+		if err := d.Set("interface_id", res.GetPayload().AssignedObjectID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("interface_id", nil)
+		if err := d.Set("interface_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Vrf != nil {
-		d.Set("vrf_id", res.GetPayload().Vrf.ID)
+		if err := d.Set("vrf_id", res.GetPayload().Vrf.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("vrf_id", nil)
+		if err := d.Set("vrf_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Tenant != nil {
-		d.Set("tenant_id", res.GetPayload().Tenant.ID)
+		if err := d.Set("tenant_id", res.GetPayload().Tenant.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("tenant_id", nil)
+		if err := d.Set("tenant_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().DNSName != "" {
-		d.Set("dns_name", res.GetPayload().DNSName)
+		if err := d.Set("dns_name", res.GetPayload().DNSName); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Role != nil {
-		d.Set("role", res.GetPayload().Role.Value)
+		if err := d.Set("role", res.GetPayload().Role.Value); err != nil {
+			return err
+		}
 	} else {
-		d.Set("role", nil)
+		if err := d.Set("role", nil); err != nil {
+			return err
+		}
 	}
 
-	d.Set("ip_address", res.GetPayload().Address)
-	d.Set("description", res.GetPayload().Description)
-	d.Set("status", res.GetPayload().Status.Value)
-	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
+	if err := d.Set("ip_address", res.GetPayload().Address); err != nil {
+		return err
+	}
+	if err := d.Set("description", res.GetPayload().Description); err != nil {
+		return err
+	}
+	if err := d.Set("status", res.GetPayload().Status.Value); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -151,7 +176,10 @@ func resourceNetboxIPAddressUpdate(d *schema.ResourceData, m interface{}) error 
 
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableIPAddress{}
 
 	ipAddress := d.Get("ip_address").(string)
@@ -196,12 +224,10 @@ func resourceNetboxIPAddressUpdate(d *schema.ResourceData, m interface{}) error 
 		data.Role = role.(string)
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	params := ipam.NewIpamIPAddressesUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Ipam.IpamIPAddressesUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamIPAddressesUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -211,11 +237,14 @@ func resourceNetboxIPAddressUpdate(d *schema.ResourceData, m interface{}) error 
 func resourceNetboxIPAddressDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamIPAddressesDeleteParams().WithID(id)
 
-	_, err := api.Ipam.IpamIPAddressesDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamIPAddressesDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

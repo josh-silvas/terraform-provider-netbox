@@ -3,10 +3,10 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/users"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/users"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxUser() *schema.Resource {
@@ -87,15 +87,16 @@ func resourceNetboxUserRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if res.GetPayload().Username != nil {
-		d.Set("username", res.GetPayload().Username)
+		if err := d.Set("username", res.GetPayload().Username); err != nil {
+			return err
+		}
 	}
 
-	d.Set("staff", res.GetPayload().IsStaff)
-	d.Set("active", res.GetPayload().IsActive)
+	if err := d.Set("staff", res.GetPayload().IsStaff); err != nil {
+		return err
+	}
 
-	// Passwords cannot be set and not read
-
-	return nil
+	return d.Set("active", res.GetPayload().IsActive)
 }
 
 func resourceNetboxUserUpdate(d *schema.ResourceData, m interface{}) error {

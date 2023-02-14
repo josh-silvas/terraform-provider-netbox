@@ -4,11 +4,11 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/extras"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/extras"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxTag() *schema.Resource {
@@ -89,31 +89,39 @@ func resourceNetboxTagCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxTagRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := extras.NewExtrasTagsReadParams().WithID(id)
 
 	res, err := api.Extras.ExtrasTagsRead(params, nil)
 	if err != nil {
-		errorcode := err.(*extras.ExtrasTagsReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("slug", res.GetPayload().Slug)
-	d.Set("color_hex", res.GetPayload().Color)
-	d.Set("description", res.GetPayload().Description)
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
+	if err := d.Set("slug", res.GetPayload().Slug); err != nil {
+		return err
+	}
+	if err := d.Set("color_hex", res.GetPayload().Color); err != nil {
+		return err
+	}
+	if err := d.Set("description", res.GetPayload().Description); err != nil {
+		return err
+	}
 	return nil
 }
 
 func resourceNetboxTagUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.Tag{}
 
 	name := d.Get("name").(string)
@@ -136,8 +144,8 @@ func resourceNetboxTagUpdate(d *schema.ResourceData, m interface{}) error {
 
 	params := extras.NewExtrasTagsUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Extras.ExtrasTagsUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Extras.ExtrasTagsUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -147,11 +155,14 @@ func resourceNetboxTagUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxTagDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := extras.NewExtrasTagsDeleteParams().WithID(id)
 
-	_, err := api.Extras.ExtrasTagsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Extras.ExtrasTagsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

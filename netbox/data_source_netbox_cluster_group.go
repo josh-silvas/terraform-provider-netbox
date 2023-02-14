@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/virtualization"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/virtualization"
 )
 
 func dataSourceNetboxClusterGroup() *schema.Resource {
@@ -47,8 +47,9 @@ func dataSourceNetboxClusterGroupRead(d *schema.ResourceData, m interface{}) err
 		return errors.New("no result")
 	}
 	result := res.GetPayload().Results[0]
-	d.Set("cluster_group_id", result.ID)
+	if err := d.Set("cluster_group_id", result.ID); err != nil {
+		return err
+	}
 	d.SetId(strconv.FormatInt(result.ID, 10))
-	d.Set("name", result.Name)
-	return nil
+	return d.Set("name", result.Name)
 }

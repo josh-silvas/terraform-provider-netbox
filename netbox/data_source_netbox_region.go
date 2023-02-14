@@ -4,10 +4,10 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
 )
 
 func dataSourceNetboxRegion() *schema.Resource {
@@ -70,10 +70,10 @@ func dataSourceNetboxRegionRead(d *schema.ResourceData, m interface{}) error {
 		for _, f := range filterParams.List() {
 			id := f.(map[string]interface{})["id"]
 			if id != nil {
-				vId := id.(int)
-				if vId != 0 {
-					vIdString := strconv.Itoa(vId)
-					params.ID = &vIdString
+				vID := id.(int)
+				if vID != 0 {
+					vIDString := strconv.Itoa(vID)
+					params.ID = &vIDString
 				}
 			}
 			name := f.(map[string]interface{})["name"]
@@ -102,11 +102,17 @@ func dataSourceNetboxRegionRead(d *schema.ResourceData, m interface{}) error {
 	}
 	result := res.GetPayload().Results[0]
 	d.SetId(strconv.FormatInt(result.ID, 10))
-	d.Set("name", result.Name)
-	d.Set("slug", result.Slug)
-	d.Set("description", result.Description)
+	if err := d.Set("name", result.Name); err != nil {
+		return err
+	}
+	if err := d.Set("slug", result.Slug); err != nil {
+		return err
+	}
+	if err := d.Set("description", result.Description); err != nil {
+		return err
+	}
 	if result.Parent != nil {
-		d.Set("parent_region_id", result.Parent.ID)
+		return d.Set("parent_region_id", result.Parent.ID)
 	}
 	return nil
 }

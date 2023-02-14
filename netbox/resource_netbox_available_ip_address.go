@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxAvailableIPAddress() *schema.Resource {
@@ -87,27 +87,25 @@ This resource will retrieve the next available IP address from a given prefix or
 func resourceNetboxAvailableIPAddressCreate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 	prefixId := int64(d.Get("prefix_id").(int))
-	vrfId := int64(int64(d.Get("vrf_id").(int)))
 	rangeId := int64(d.Get("ip_range_id").(int))
-	nestedvrf := models.NestedVRF{
-		ID: vrfId,
-	}
-	data := models.AvailableIP{
-		Vrf: &nestedvrf,
-	}
+	data := models.WritableAvailableIP{}
 	if prefixId != 0 {
-		params := ipam.NewIpamPrefixesAvailableIpsCreateParams().WithID(prefixId).WithData([]*models.AvailableIP{&data})
+		params := ipam.NewIpamPrefixesAvailableIpsCreateParams().WithID(prefixId).WithData(&data)
 		res, _ := api.Ipam.IpamPrefixesAvailableIpsCreate(params, nil)
 		// Since we generated the ip_address set that now
 		d.SetId(strconv.FormatInt(res.Payload[0].ID, 10))
-		d.Set("ip_address", *res.Payload[0].Address)
+		if err := d.Set("ip_address", *res.Payload[0].Address); err != nil {
+			return err
+		}
 	}
 	if rangeId != 0 {
-		params := ipam.NewIpamIPRangesAvailableIpsCreateParams().WithID(rangeId).WithData([]*models.AvailableIP{&data})
+		params := ipam.NewIpamIPRangesAvailableIpsCreateParams().WithID(rangeId).WithData(&data)
 		res, _ := api.Ipam.IpamIPRangesAvailableIpsCreate(params, nil)
 		// Since we generated the ip_address set that now
 		d.SetId(strconv.FormatInt(res.Payload[0].ID, 10))
-		d.Set("ip_address", *res.Payload[0].Address)
+		if err := d.Set("ip_address", *res.Payload[0].Address); err != nil {
+			return err
+		}
 	}
 	return resourceNetboxAvailableIPAddressUpdate(d, m)
 }
@@ -130,31 +128,53 @@ func resourceNetboxAvailableIPAddressRead(d *schema.ResourceData, m interface{})
 	}
 
 	if res.GetPayload().AssignedObjectID != nil {
-		d.Set("interface_id", res.GetPayload().AssignedObjectID)
+		if err := d.Set("interface_id", res.GetPayload().AssignedObjectID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("interface_id", nil)
+		if err := d.Set("interface_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Vrf != nil {
-		d.Set("vrf_id", res.GetPayload().Vrf.ID)
+		if err := d.Set("vrf_id", res.GetPayload().Vrf.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("vrf_id", nil)
+		if err := d.Set("vrf_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Tenant != nil {
-		d.Set("tenant_id", res.GetPayload().Tenant.ID)
+		if err := d.Set("tenant_id", res.GetPayload().Tenant.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("tenant_id", nil)
+		if err := d.Set("tenant_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().DNSName != "" {
-		d.Set("dns_name", res.GetPayload().DNSName)
+		if err := d.Set("dns_name", res.GetPayload().DNSName); err != nil {
+			return err
+		}
 	}
 
-	d.Set("ip_address", res.GetPayload().Address)
-	d.Set("description", res.GetPayload().Description)
-	d.Set("status", res.GetPayload().Status.Value)
-	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
+	if err := d.Set("ip_address", res.GetPayload().Address); err != nil {
+		return err
+	}
+	if err := d.Set("description", res.GetPayload().Description); err != nil {
+		return err
+	}
+	if err := d.Set("status", res.GetPayload().Status.Value); err != nil {
+		return err
+	}
+	if err := d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags)); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -198,7 +218,7 @@ func resourceNetboxAvailableIPAddressUpdate(d *schema.ResourceData, m interface{
 		data.Tenant = int64ToPtr(int64(tenantID.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamIPAddressesUpdateParams().WithID(id).WithData(&data)
 

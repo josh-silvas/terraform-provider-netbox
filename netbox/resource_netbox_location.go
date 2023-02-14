@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxLocation() *schema.Resource {
@@ -77,7 +77,7 @@ func resourceNetboxLocationCreate(d *schema.ResourceData, m interface{}) error {
 		data.Tenant = int64ToPtr(int64(tenantIDValue.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	ct, ok := d.GetOk(customFieldsKey)
 	if ok {
@@ -115,28 +115,41 @@ func resourceNetboxLocationRead(d *schema.ResourceData, m interface{}) error {
 
 	location := res.GetPayload()
 
-	d.Set("name", location.Name)
-	d.Set("slug", location.Slug)
+	if err := d.Set("name", location.Name); err != nil {
+		return err
+	}
+	if err := d.Set("slug", location.Slug); err != nil {
+		return err
+	}
 
 	if res.GetPayload().Site != nil {
-		d.Set("site_id", res.GetPayload().Site.ID)
+		if err := d.Set("site_id", res.GetPayload().Site.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("site_id", nil)
+		if err := d.Set("site_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Tenant != nil {
-		d.Set("tenant_id", res.GetPayload().Tenant.ID)
+		if err := d.Set("tenant_id", res.GetPayload().Tenant.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("tenant_id", nil)
+		if err := d.Set("tenant_id", nil); err != nil {
+			return err
+		}
 	}
 
 	cf := getCustomFields(res.GetPayload().CustomFields)
 	if cf != nil {
-		d.Set(customFieldsKey, cf)
+		if err := d.Set(customFieldsKey, cf); err != nil {
+			return err
+		}
 	}
-	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
 
-	return nil
+	return d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
 }
 
 func resourceNetboxLocationUpdate(d *schema.ResourceData, m interface{}) error {
@@ -166,7 +179,7 @@ func resourceNetboxLocationUpdate(d *schema.ResourceData, m interface{}) error {
 		data.Tenant = int64ToPtr(int64(tenantIDValue.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	cf, ok := d.GetOk(customFieldsKey)
 	if ok {

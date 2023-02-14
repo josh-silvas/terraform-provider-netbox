@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxService() *schema.Resource {
@@ -103,11 +103,15 @@ func resourceNetboxServiceCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxServiceRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamServicesReadParams().WithID(id)
 
 	res, err := api.Ipam.IpamServicesRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*ipam.IpamServicesReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -117,17 +121,28 @@ func resourceNetboxServiceRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("protocol", res.GetPayload().Protocol.Value)
-	d.Set("ports", res.GetPayload().Ports)
-	d.Set("virtual_machine_id", res.GetPayload().VirtualMachine.ID)
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
+	if err := d.Set("protocol", res.GetPayload().Protocol.Value); err != nil {
+		return err
+	}
+	if err := d.Set("ports", res.GetPayload().Ports); err != nil {
+		return err
+	}
+	if err := d.Set("virtual_machine_id", res.GetPayload().VirtualMachine.ID); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func resourceNetboxServiceUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableService{}
 
 	dataName := d.Get("name").(string)
@@ -157,8 +172,8 @@ func resourceNetboxServiceUpdate(d *schema.ResourceData, m interface{}) error {
 	data.VirtualMachine = &dataVirtualMachineID
 
 	params := ipam.NewIpamServicesUpdateParams().WithID(id).WithData(&data)
-	_, err := api.Ipam.IpamServicesUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamServicesUpdate(params, nil); err != nil {
 		return err
 	}
 	return resourceNetboxServiceRead(d, m)
@@ -166,10 +181,13 @@ func resourceNetboxServiceUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxServiceDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
-	params := ipam.NewIpamServicesDeleteParams().WithID(id)
-	_, err := api.Ipam.IpamServicesDelete(params, nil)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
+		return err
+	}
+	params := ipam.NewIpamServicesDeleteParams().WithID(id)
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamServicesDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

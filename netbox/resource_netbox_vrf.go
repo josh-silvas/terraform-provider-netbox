@@ -3,10 +3,10 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxVrf() *schema.Resource {
@@ -42,15 +42,12 @@ func resourceNetboxVrfCreate(d *schema.ResourceData, m interface{}) error {
 	data := models.WritableVRF{}
 
 	name := d.Get("name").(string)
-	tenant_id := int64(d.Get("tenant_id").(int))
+	tenantID := int64(d.Get("tenant_id").(int))
 
 	data.Name = &name
-	if tenant_id != 0 {
-		data.Tenant = &tenant_id
+	if tenantID != 0 {
+		data.Tenant = &tenantID
 	}
-
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	data.ExportTargets = []int64{}
 	data.ImportTargets = []int64{}
 
@@ -68,11 +65,15 @@ func resourceNetboxVrfCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxVrfRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamVrfsReadParams().WithID(id)
 
 	res, err := api.Ipam.IpamVrfsRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*ipam.IpamVrfsReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -82,27 +83,26 @@ func resourceNetboxVrfRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	if res.GetPayload().Tenant != nil {
-		d.Set("tenant_id", res.GetPayload().Tenant.ID)
-	} else {
-		d.Set("tenant_id", nil)
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
 	}
-	return nil
+	if res.GetPayload().Tenant != nil {
+		return d.Set("tenant_id", res.GetPayload().Tenant.ID)
+	}
+	return d.Set("tenant_id", nil)
 }
 
 func resourceNetboxVrfUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableVRF{}
 
 	name := d.Get("name").(string)
-
-	tags, _ := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	data.Name = &name
-	data.Tags = tags
 	data.ExportTargets = []int64{}
 	data.ImportTargets = []int64{}
 
@@ -111,8 +111,8 @@ func resourceNetboxVrfUpdate(d *schema.ResourceData, m interface{}) error {
 	}
 	params := ipam.NewIpamVrfsPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Ipam.IpamVrfsPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamVrfsPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -122,11 +122,14 @@ func resourceNetboxVrfUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxVrfDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamVrfsDeleteParams().WithID(id)
 
-	_, err := api.Ipam.IpamVrfsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamVrfsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

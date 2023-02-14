@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/users"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/users"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxToken() *schema.Resource {
@@ -106,14 +106,26 @@ func resourceNetboxTokenRead(d *schema.ResourceData, m interface{}) error {
 	token := res.GetPayload()
 
 	if token.User != nil {
-		d.Set("user_id", token.User.ID)
+		if err := d.Set("user_id", token.User.ID); err != nil {
+			return err
+		}
 	}
 
-	d.Set("key", token.Key)
-	d.Set("last_used", token.LastUsed)
-	d.Set("expires", token.Expires)
-	d.Set("allowed_ips", token.AllowedIps)
-	d.Set("write_enabled", token.WriteEnabled)
+	if err := d.Set("key", token.Key); err != nil {
+		return err
+	}
+	if err := d.Set("last_used", token.LastUsed); err != nil {
+		return err
+	}
+	if err := d.Set("expires", token.Expires); err != nil {
+		return err
+	}
+	if err := d.Set("allowed_ips", token.AllowedIps); err != nil {
+		return err
+	}
+	if err := d.Set("write_enabled", token.WriteEnabled); err != nil {
+		return err
+	}
 
 	return nil
 }

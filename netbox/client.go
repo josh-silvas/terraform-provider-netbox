@@ -3,11 +3,11 @@ package netbox
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
-	netboxclient "github.com/fbreckle/go-netbox/netbox/client"
 	httptransport "github.com/go-openapi/runtime/client"
-	"github.com/goware/urlx"
+	netboxclient "github.com/netbox-community/go-netbox/netbox/client"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -15,13 +15,13 @@ import (
 type Config struct {
 	APIToken                    string
 	ServerURL                   string
-	AllowInsecureHttps          bool
+	AllowInsecureHTTPS          bool
 	Headers                     map[string]interface{}
 	RequestTimeout              int
 	StripTrailingSlashesFromURL bool
 }
 
-// customHeaderTransport is a transport that adds the specified headers on
+// customHeaderTransport : Transport that adds the specified headers on
 // every request.
 type customHeaderTransport struct {
 	original http.RoundTripper
@@ -30,7 +30,6 @@ type customHeaderTransport struct {
 
 // Client does the heavy lifting of establishing a base Open API client to Netbox.
 func (cfg *Config) Client() (interface{}, error) {
-
 	log.WithFields(log.Fields{
 		"server_url": cfg.ServerURL,
 	}).Debug("Initializing Netbox client")
@@ -40,9 +39,9 @@ func (cfg *Config) Client() (interface{}, error) {
 	}
 
 	// parse serverUrl
-	parsedURL, urlParseError := urlx.Parse(cfg.ServerURL)
+	parsedURL, urlParseError := url.Parse(cfg.ServerURL)
 	if urlParseError != nil {
-		return nil, fmt.Errorf("error while trying to parse URL: %s", urlParseError)
+		return nil, fmt.Errorf("error while trying to parse URL: %w", urlParseError)
 	}
 
 	desiredRuntimeClientSchemes := []string{parsedURL.Scheme}
@@ -53,7 +52,7 @@ func (cfg *Config) Client() (interface{}, error) {
 
 	// build http client
 	clientOpts := httptransport.TLSClientOptions{
-		InsecureSkipVerify: cfg.AllowInsecureHttps,
+		InsecureSkipVerify: cfg.AllowInsecureHTTPS,
 	}
 
 	trans, err := httptransport.TLSTransport(clientOpts)

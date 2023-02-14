@@ -4,12 +4,12 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/virtualization"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/virtualization"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxVirtualMachine() *schema.Resource {
@@ -170,7 +170,7 @@ func resourceNetboxVirtualMachineCreate(ctx context.Context, d *schema.ResourceD
 
 	data.Status = d.Get("status").(string)
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	ct, ok := d.GetOk(customFieldsKey)
 	if ok {
@@ -189,7 +189,7 @@ func resourceNetboxVirtualMachineCreate(ctx context.Context, d *schema.ResourceD
 	return resourceNetboxVirtualMachineRead(ctx, d, m)
 }
 
-func resourceNetboxVirtualMachineRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceNetboxVirtualMachineRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	api := m.(*client.NetBoxAPI)
 
 	var diags diag.Diagnostics
@@ -211,81 +211,137 @@ func resourceNetboxVirtualMachineRead(ctx context.Context, d *schema.ResourceDat
 
 	vm := res.GetPayload()
 
-	d.Set("name", vm.Name)
+	if err := d.Set("name", vm.Name); err != nil {
+		return diag.FromErr(err)
+	}
 
 	if vm.Cluster != nil {
-		d.Set("cluster_id", vm.Cluster.ID)
+		if err := d.Set("cluster_id", vm.Cluster.ID); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("cluster_id", nil)
+		if err := d.Set("cluster_id", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if vm.PrimaryIp4 != nil {
-		d.Set("primary_ipv4", vm.PrimaryIp4.ID)
+		if err := d.Set("primary_ipv4", vm.PrimaryIp4.ID); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("primary_ipv4", nil)
+		if err := d.Set("primary_ipv4", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if vm.PrimaryIp6 != nil {
-		d.Set("primary_ipv6", vm.PrimaryIp6.ID)
+		if err := d.Set("primary_ipv6", vm.PrimaryIp6.ID); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("primary_ipv6", nil)
+		if err := d.Set("primary_ipv6", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if vm.Tenant != nil {
-		d.Set("tenant_id", vm.Tenant.ID)
+		if err := d.Set("tenant_id", vm.Tenant.ID); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("tenant_id", nil)
+		if err := d.Set("tenant_id", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if vm.Device != nil {
-		d.Set("device_id", vm.Device.ID)
+		if err := d.Set("device_id", vm.Device.ID); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("device_id", nil)
+		if err := d.Set("device_id", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if vm.Role != nil {
-		d.Set("role_id", vm.Role.ID)
+		if err := d.Set("role_id", vm.Role.ID); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("role_id", nil)
+		if err := d.Set("role_id", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if vm.Platform != nil {
-		d.Set("platform_id", vm.Platform.ID)
+		if err := d.Set("platform_id", vm.Platform.ID); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("platform_id", nil)
+		if err := d.Set("platform_id", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if vm.Role != nil {
-		d.Set("role_id", vm.Role.ID)
+		if err := d.Set("role_id", vm.Role.ID); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("role_id", nil)
+		if err := d.Set("role_id", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if vm.Site != nil {
-		d.Set("site_id", vm.Site.ID)
+		if err := d.Set("site_id", vm.Site.ID); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("site_id", nil)
+		if err := d.Set("site_id", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
-	d.Set("comments", vm.Comments)
+	if err := d.Set("comments", vm.Comments); err != nil {
+		return diag.FromErr(err)
+	}
 	vcpus := vm.Vcpus
 	if vcpus != nil {
-		d.Set("vcpus", vm.Vcpus)
+		if err := d.Set("vcpus", vm.Vcpus); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("vcpus", nil)
+		if err := d.Set("vcpus", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
-	d.Set("memory_mb", vm.Memory)
-	d.Set("disk_size_gb", vm.Disk)
+	if err := d.Set("memory_mb", vm.Memory); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("disk_size_gb", vm.Disk); err != nil {
+		return diag.FromErr(err)
+	}
 	if vm.Status != nil {
-		d.Set("status", vm.Status.Value)
+		if err := d.Set("status", vm.Status.Value); err != nil {
+			return diag.FromErr(err)
+		}
 	} else {
-		d.Set("status", nil)
+		if err := d.Set("status", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
-	d.Set(tagsKey, getTagListFromNestedTagList(vm.Tags))
+	if err := d.Set(tagsKey, getTagListFromNestedTagList(vm.Tags)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	cf := getCustomFields(vm.CustomFields)
 	if cf != nil {
-		d.Set(customFieldsKey, cf)
+		if err := d.Set(customFieldsKey, cf); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags
@@ -375,7 +431,7 @@ func resourceNetboxVirtualMachineUpdate(ctx context.Context, d *schema.ResourceD
 		data.PrimaryIp6 = &primaryIP6
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	cf, ok := d.GetOk(customFieldsKey)
 	if ok {

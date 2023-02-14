@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/extras"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/extras"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceCustomField() *schema.Resource {
@@ -107,7 +107,10 @@ func resourceCustomField() *schema.Resource {
 func resourceNetboxCustomFieldUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 
 	data := &models.WritableCustomField{
 		Name:            strToPtr(d.Get("name").(string)),
@@ -212,10 +215,14 @@ func resourceNetboxCustomFieldCreate(d *schema.ResourceData, m interface{}) erro
 
 func resourceNetboxCustomFieldRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := extras.NewExtrasCustomFieldsReadParams().WithID(id)
 	res, err := api.Extras.ExtrasCustomFieldsRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errapi, ok := err.(*extras.ExtrasCustomFieldsReadDefault)
 		if !ok {
 			return err
@@ -228,37 +235,68 @@ func resourceNetboxCustomFieldRead(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("type", *res.GetPayload().Type.Value)
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
+	if err := d.Set("type", *res.GetPayload().Type.Value); err != nil {
+		return err
+	}
 
-	d.Set("content_types", res.GetPayload().ContentTypes)
+	if err := d.Set("content_types", res.GetPayload().ContentTypes); err != nil {
+		return err
+	}
 
 	choices := res.GetPayload().Choices
 	if choices != nil {
-		d.Set("choices", res.GetPayload().Choices)
+		if err := d.Set("choices", res.GetPayload().Choices); err != nil {
+			return err
+		}
 	}
 
-	d.Set("weight", res.GetPayload().Weight)
+	if err := d.Set("weight", res.GetPayload().Weight); err != nil {
+		return err
+	}
 	if res.GetPayload().Default != nil {
-		d.Set("default", res.GetPayload().Default)
+		if err := d.Set("default", res.GetPayload().Default); err != nil {
+			return err
+		}
 	}
 
-	d.Set("description", res.GetPayload().Description)
-	d.Set("group_name", res.GetPayload().GroupName)
-	d.Set("label", res.GetPayload().Label)
-	d.Set("required", res.GetPayload().Required)
-
-	d.Set("validation_maximum", res.GetPayload().ValidationMaximum)
-	d.Set("validation_minimum", res.GetPayload().ValidationMinimum)
-	d.Set("validation_regex", res.GetPayload().ValidationRegex)
+	if err := d.Set("description", res.GetPayload().Description); err != nil {
+		return err
+	}
+	if err := d.Set("group_name", res.GetPayload().GroupName); err != nil {
+		return err
+	}
+	if err := d.Set("label", res.GetPayload().Label); err != nil {
+		return err
+	}
+	if err := d.Set("required", res.GetPayload().Required); err != nil {
+		return err
+	}
+	if err := d.Set("validation_maximum", res.GetPayload().ValidationMaximum); err != nil {
+		return err
+	}
+	if err := d.Set("validation_minimum", res.GetPayload().ValidationMinimum); err != nil {
+		return err
+	}
+	if err := d.Set("validation_regex", res.GetPayload().ValidationRegex); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func resourceNetboxCustomFieldDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := extras.NewExtrasCustomFieldsDeleteParams().WithID(id)
-	_, err := api.Extras.ExtrasCustomFieldsDelete(params, nil)
-	return err
+	// nolint: errcheck
+	if _, err := api.Extras.ExtrasCustomFieldsDelete(params, nil); err != nil {
+		return err
+	}
+	return nil
 }

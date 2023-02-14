@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxRir() *schema.Resource {
@@ -83,11 +83,15 @@ func resourceNetboxRirRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if res.GetPayload().Name != nil {
-		d.Set("name", res.GetPayload().Name)
+		if err := d.Set("name", res.GetPayload().Name); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Slug != nil {
-		d.Set("slug", res.GetPayload().Slug)
+		if err := d.Set("slug", res.GetPayload().Slug); err != nil {
+			return err
+		}
 	}
 
 	return nil

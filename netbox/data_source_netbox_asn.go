@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
 )
 
 func dataSourceNetboxAsn() *schema.Resource {
@@ -74,10 +74,18 @@ func dataSourceNetboxAsnRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	result := res.GetPayload().Results[0]
-	d.Set("id", result.ID)
-	d.Set("asn", strconv.FormatInt(*result.Asn, 10))
-	d.Set("description", result.Description)
-	d.Set("tags", getTagListFromNestedTagList(result.Tags))
+	if err := d.Set("id", result.ID); err != nil {
+		return err
+	}
+	if err := d.Set("asn", strconv.FormatInt(*result.Asn, 10)); err != nil {
+		return err
+	}
+	if err := d.Set("description", result.Description); err != nil {
+		return err
+	}
+	if err := d.Set("tags", getTagListFromNestedTagList(result.Tags)); err != nil {
+		return err
+	}
 	d.SetId(strconv.FormatInt(result.ID, 10))
 	return nil
 }

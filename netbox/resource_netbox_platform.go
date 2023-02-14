@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxPlatform() *schema.Resource {
@@ -57,7 +57,6 @@ func resourceNetboxPlatformCreate(d *schema.ResourceData, m interface{}) error {
 		&models.WritablePlatform{
 			Name: &name,
 			Slug: &slug,
-			Tags: []*models.NestedTag{},
 		},
 	)
 
@@ -74,30 +73,31 @@ func resourceNetboxPlatformCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxPlatformRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimPlatformsReadParams().WithID(id)
 
 	res, err := api.Dcim.DcimPlatformsRead(params, nil)
 
 	if err != nil {
-		errorcode := err.(*dcim.DcimPlatformsReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("slug", res.GetPayload().Slug)
-	return nil
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
+	return d.Set("slug", res.GetPayload().Slug)
 }
 
 func resourceNetboxPlatformUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritablePlatform{}
 
 	name := d.Get("name").(string)
@@ -113,12 +113,11 @@ func resourceNetboxPlatformUpdate(d *schema.ResourceData, m interface{}) error {
 
 	data.Slug = &slug
 	data.Name = &name
-	data.Tags = []*models.NestedTag{}
 
 	params := dcim.NewDcimPlatformsPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Dcim.DcimPlatformsPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimPlatformsPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -128,11 +127,14 @@ func resourceNetboxPlatformUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxPlatformDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimPlatformsDeleteParams().WithID(id)
 
-	_, err := api.Dcim.DcimPlatformsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimPlatformsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

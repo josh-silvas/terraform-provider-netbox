@@ -3,10 +3,10 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxDeviceRole() *schema.Resource {
@@ -64,15 +64,12 @@ func resourceNetboxDeviceRoleCreate(d *schema.ResourceData, m interface{}) error
 	color := d.Get("color_hex").(string)
 	vmRole := d.Get("vm_role").(bool)
 
-	tags, _ := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	params := dcim.NewDcimDeviceRolesCreateParams().WithData(
 		&models.DeviceRole{
 			Name:   &name,
 			Slug:   &slug,
 			Color:  color,
 			VMRole: vmRole,
-			Tags:   tags,
 		},
 	)
 
@@ -89,32 +86,39 @@ func resourceNetboxDeviceRoleCreate(d *schema.ResourceData, m interface{}) error
 
 func resourceNetboxDeviceRoleRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimDeviceRolesReadParams().WithID(id)
 
 	res, err := api.Dcim.DcimDeviceRolesRead(params, nil)
 	if err != nil {
-		errorcode := err.(*dcim.DcimDeviceRolesReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("slug", res.GetPayload().Slug)
-	d.Set("vm_role", res.GetPayload().VMRole)
-	d.Set("color_hex", res.GetPayload().Color)
-	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
+	if err := d.Set("slug", res.GetPayload().Slug); err != nil {
+		return err
+	}
+	if err := d.Set("vm_role", res.GetPayload().VMRole); err != nil {
+		return err
+	}
+	if err := d.Set("color_hex", res.GetPayload().Color); err != nil {
+		return err
+	}
 	return nil
 }
 
 func resourceNetboxDeviceRoleUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.DeviceRole{}
 
 	name := d.Get("name").(string)
@@ -136,13 +140,10 @@ func resourceNetboxDeviceRoleUpdate(d *schema.ResourceData, m interface{}) error
 	data.VMRole = vmRole
 	data.Color = color
 
-	tags, _ := getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-	data.Tags = tags
-
 	params := dcim.NewDcimDeviceRolesPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Dcim.DcimDeviceRolesPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimDeviceRolesPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -152,11 +153,13 @@ func resourceNetboxDeviceRoleUpdate(d *schema.ResourceData, m interface{}) error
 func resourceNetboxDeviceRoleDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
-	params := dcim.NewDcimDeviceRolesDeleteParams().WithID(id)
-
-	_, err := api.Dcim.DcimDeviceRolesDelete(params, nil)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
+		return err
+	}
+	params := dcim.NewDcimDeviceRolesDeleteParams().WithID(id)
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimDeviceRolesDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

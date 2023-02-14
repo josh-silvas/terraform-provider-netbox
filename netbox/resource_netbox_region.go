@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxRegion() *schema.Resource {
@@ -79,8 +79,6 @@ func resourceNetboxRegionCreate(d *schema.ResourceData, m interface{}) error {
 		data.Parent = int64ToPtr(int64(parentRegionIDValue.(int)))
 	}
 
-	data.Tags = []*models.NestedTag{}
-
 	params := dcim.NewDcimRegionsCreateParams().WithData(&data)
 
 	res, err := api.Dcim.DcimRegionsCreate(params, nil)
@@ -94,36 +92,43 @@ func resourceNetboxRegionCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxRegionRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimRegionsReadParams().WithID(id)
 
 	res, err := api.Dcim.DcimRegionsRead(params, nil)
 
 	if err != nil {
-		errorcode := err.(*dcim.DcimRegionsReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("slug", res.GetPayload().Slug)
-	if res.GetPayload().Parent != nil {
-		d.Set("parent_region_id", res.GetPayload().Parent.ID)
-	} else {
-		d.Set("parent_region_id", nil)
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
 	}
-	d.Set("description", res.GetPayload().Description)
-	return nil
+	if err := d.Set("slug", res.GetPayload().Slug); err != nil {
+		return err
+	}
+	if res.GetPayload().Parent != nil {
+		if err := d.Set("parent_region_id", res.GetPayload().Parent.ID); err != nil {
+			return err
+		}
+	} else {
+		if err := d.Set("parent_region_id", nil); err != nil {
+			return err
+		}
+	}
+	return d.Set("description", res.GetPayload().Description)
 }
 
 func resourceNetboxRegionUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableRegion{}
 
 	name := d.Get("name").(string)
@@ -146,12 +151,10 @@ func resourceNetboxRegionUpdate(d *schema.ResourceData, m interface{}) error {
 		data.Parent = int64ToPtr(int64(parentRegionIDValue.(int)))
 	}
 
-	data.Tags = []*models.NestedTag{}
-
 	params := dcim.NewDcimRegionsPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Dcim.DcimRegionsPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimRegionsPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -161,11 +164,14 @@ func resourceNetboxRegionUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxRegionDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimRegionsDeleteParams().WithID(id)
 
-	_, err := api.Dcim.DcimRegionsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimRegionsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

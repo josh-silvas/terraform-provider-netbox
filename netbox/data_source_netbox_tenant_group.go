@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/tenancy"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/tenancy"
 )
 
 func dataSourceNetboxTenantGroup() *schema.Resource {
@@ -56,11 +56,17 @@ func dataSourceNetboxTenantGroupRead(d *schema.ResourceData, m interface{}) erro
 	}
 	result := res.GetPayload().Results[0]
 	d.SetId(strconv.FormatInt(result.ID, 10))
-	d.Set("name", result.Name)
-	d.Set("slug", result.Slug)
-	d.Set("description", result.Description)
+	if err := d.Set("name", result.Name); err != nil {
+		return err
+	}
+	if err := d.Set("slug", result.Slug); err != nil {
+		return err
+	}
+	if err := d.Set("description", result.Description); err != nil {
+		return err
+	}
 	if result.Parent != nil {
-		d.Set("parent_id", result.Parent.ID)
+		return d.Set("parent_id", result.Parent.ID)
 	}
 	return nil
 }

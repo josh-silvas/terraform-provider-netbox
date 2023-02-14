@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
 )
 
 func dataSourceNetboxSite() *schema.Resource {
@@ -88,25 +88,45 @@ func dataSourceNetboxSiteRead(d *schema.ResourceData, m interface{}) error {
 	site := res.GetPayload().Results[0]
 
 	d.SetId(strconv.FormatInt(site.ID, 10))
-	d.Set("asn_ids", getIDsFromNestedASNList(site.Asns))
-	d.Set("comments", site.Comments)
-	d.Set("description", site.Description)
-	d.Set("name", site.Name)
-	d.Set("site_id", site.ID)
-	d.Set("slug", site.Slug)
-	d.Set("time_zone", site.TimeZone)
+	if err := d.Set("asn_ids", site.Asns); err != nil {
+		return err
+	}
+	if err := d.Set("comments", site.Comments); err != nil {
+		return err
+	}
+	if err := d.Set("description", site.Description); err != nil {
+		return err
+	}
+	if err := d.Set("name", site.Name); err != nil {
+		return err
+	}
+	if err := d.Set("site_id", site.ID); err != nil {
+		return err
+	}
+	if err := d.Set("slug", site.Slug); err != nil {
+		return err
+	}
+	if err := d.Set("time_zone", site.TimeZone); err != nil {
+		return err
+	}
 
 	if site.Group != nil {
-		d.Set("group_id", site.Group.ID)
+		if err := d.Set("group_id", site.Group.ID); err != nil {
+			return err
+		}
 	}
 	if site.Region != nil {
-		d.Set("region_id", site.Region.ID)
+		if err := d.Set("region_id", site.Region.ID); err != nil {
+			return err
+		}
 	}
 	if site.Status != nil {
-		d.Set("status", site.Status.Value)
+		if err := d.Set("status", site.Status.Value); err != nil {
+			return err
+		}
 	}
 	if site.Tenant != nil {
-		d.Set("tenant_id", site.Tenant.ID)
+		return d.Set("tenant_id", site.Tenant.ID)
 	}
 
 	return nil

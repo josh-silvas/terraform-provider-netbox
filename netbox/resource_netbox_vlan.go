@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/ipam"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/ipam"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxVlan() *schema.Resource {
@@ -89,8 +89,6 @@ func resourceNetboxVlanCreate(d *schema.ResourceData, m interface{}) error {
 		data.Role = int64ToPtr(int64(roleID.(int)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	params := ipam.NewIpamVlansCreateParams().WithData(&data)
 	res, err := api.Ipam.IpamVlansCreate(params, nil)
 	if err != nil {
@@ -103,11 +101,15 @@ func resourceNetboxVlanCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxVlanRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamVlansReadParams().WithID(id)
 
 	res, err := api.Ipam.IpamVlansRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*ipam.IpamVlansReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -119,22 +121,35 @@ func resourceNetboxVlanRead(d *schema.ResourceData, m interface{}) error {
 
 	vlan := res.GetPayload()
 
-	d.Set("name", vlan.Name)
-	d.Set("vid", vlan.Vid)
-	d.Set("description", vlan.Description)
-	d.Set(tagsKey, getTagListFromNestedTagList(vlan.Tags))
+	if err := d.Set("name", vlan.Name); err != nil {
+		return err
+	}
+	if err := d.Set("vid", vlan.Vid); err != nil {
+		return err
+	}
+	if err := d.Set("description", vlan.Description); err != nil {
+		return err
+	}
 
 	if vlan.Status != nil {
-		d.Set("status", vlan.Status.Value)
+		if err := d.Set("status", vlan.Status.Value); err != nil {
+			return err
+		}
 	}
 	if vlan.Site != nil {
-		d.Set("site_id", vlan.Site.ID)
+		if err := d.Set("site_id", vlan.Site.ID); err != nil {
+			return err
+		}
 	}
 	if vlan.Tenant != nil {
-		d.Set("tenant_id", vlan.Tenant.ID)
+		if err := d.Set("tenant_id", vlan.Tenant.ID); err != nil {
+			return err
+		}
 	}
 	if vlan.Role != nil {
-		d.Set("role_id", vlan.Role.ID)
+		if err := d.Set("role_id", vlan.Role.ID); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -142,7 +157,10 @@ func resourceNetboxVlanRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxVlanUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableVLAN{}
 	name := d.Get("name").(string)
 	vid := int64(d.Get("vid").(int))
@@ -165,12 +183,9 @@ func resourceNetboxVlanUpdate(d *schema.ResourceData, m interface{}) error {
 	if roleID, ok := d.GetOk("role_id"); ok {
 		data.Role = int64ToPtr(int64(roleID.(int)))
 	}
-
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	params := ipam.NewIpamVlansUpdateParams().WithID(id).WithData(&data)
-	_, err := api.Ipam.IpamVlansUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamVlansUpdate(params, nil); err != nil {
 		return err
 	}
 	return resourceNetboxVlanRead(d, m)
@@ -178,10 +193,13 @@ func resourceNetboxVlanUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxVlanDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
-	params := ipam.NewIpamVlansDeleteParams().WithID(id)
-	_, err := api.Ipam.IpamVlansDelete(params, nil)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
+		return err
+	}
+	params := ipam.NewIpamVlansDeleteParams().WithID(id)
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamVlansDelete(params, nil); err != nil {
 		return err
 	}
 

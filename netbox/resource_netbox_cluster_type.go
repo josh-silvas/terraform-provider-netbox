@@ -3,10 +3,10 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/virtualization"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/virtualization"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxClusterType() *schema.Resource {
@@ -86,9 +86,10 @@ func resourceNetboxClusterTypeRead(d *schema.ResourceData, m interface{}) error 
 		return err
 	}
 
-	d.Set("name", res.GetPayload().Name)
-	d.Set("slug", res.GetPayload().Slug)
-	return nil
+	if err := d.Set("name", res.GetPayload().Name); err != nil {
+		return err
+	}
+	return d.Set("slug", res.GetPayload().Slug)
 }
 
 func resourceNetboxClusterTypeUpdate(d *schema.ResourceData, m interface{}) error {

@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxSite() *schema.Resource {
@@ -128,12 +128,12 @@ func resourceNetboxSiteCreate(d *schema.ResourceData, m interface{}) error {
 
 	latitudeValue, ok := d.GetOk("latitude")
 	if ok {
-		data.Latitude = float64ToPtr(float64(latitudeValue.(float64)))
+		data.Latitude = float64ToPtr(latitudeValue.(float64))
 	}
 
 	longitudeValue, ok := d.GetOk("longitude")
 	if ok {
-		data.Longitude = float64ToPtr(float64(longitudeValue.(float64)))
+		data.Longitude = float64ToPtr(longitudeValue.(float64))
 	}
 
 	physicalAddressValue, ok := d.GetOk("physical_address")
@@ -165,12 +165,12 @@ func resourceNetboxSiteCreate(d *schema.ResourceData, m interface{}) error {
 		data.TimeZone = timezone.(string)
 	}
 
-	data.Asns = []int64{}
+	data.Asns = make([]int64, 0)
 	if asnsValue, ok := d.GetOk("asn_ids"); ok {
 		data.Asns = toInt64List(asnsValue)
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	ct, ok := d.GetOk(customFieldsKey)
 	if ok {
@@ -191,66 +191,98 @@ func resourceNetboxSiteCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxSiteRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimSitesReadParams().WithID(id)
 
 	res, err := api.Dcim.DcimSitesRead(params, nil)
 
 	if err != nil {
-		errorcode := err.(*dcim.DcimSitesReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
 	site := res.GetPayload()
 
-	d.Set("name", site.Name)
-	d.Set("slug", site.Slug)
-	d.Set("status", site.Status.Value)
-	d.Set("description", site.Description)
-	d.Set("facility", site.Facility)
-	d.Set("longitude", site.Longitude)
-	d.Set("latitude", site.Latitude)
-	d.Set("physical_address", site.PhysicalAddress)
-	d.Set("shipping_address", site.ShippingAddress)
-	d.Set("timezone", site.TimeZone)
-	d.Set("asn_ids", getIDsFromNestedASNList(site.Asns))
+	if err := d.Set("name", site.Name); err != nil {
+		return err
+	}
+	if err := d.Set("slug", site.Slug); err != nil {
+		return err
+	}
+	if err := d.Set("status", site.Status.Value); err != nil {
+		return err
+	}
+	if err := d.Set("description", site.Description); err != nil {
+		return err
+	}
+	if err := d.Set("facility", site.Facility); err != nil {
+		return err
+	}
+	if err := d.Set("longitude", site.Longitude); err != nil {
+		return err
+	}
+	if err := d.Set("latitude", site.Latitude); err != nil {
+		return err
+	}
+	if err := d.Set("physical_address", site.PhysicalAddress); err != nil {
+		return err
+	}
+	if err := d.Set("shipping_address", site.ShippingAddress); err != nil {
+		return err
+	}
+	if err := d.Set("timezone", site.TimeZone); err != nil {
+		return err
+	}
+	if err := d.Set("asn_ids", site.Asns); err != nil {
+		return err
+	}
 
 	if res.GetPayload().Region != nil {
-		d.Set("region_id", res.GetPayload().Region.ID)
+		if err := d.Set("region_id", res.GetPayload().Region.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("region_id", nil)
+		if err := d.Set("region_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Group != nil {
-		d.Set("group_id", res.GetPayload().Group.ID)
+		if err := d.Set("group_id", res.GetPayload().Group.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("group_id", nil)
+		if err := d.Set("group_id", nil); err != nil {
+			return err
+		}
 	}
 
 	if res.GetPayload().Tenant != nil {
-		d.Set("tenant_id", res.GetPayload().Tenant.ID)
+		if err := d.Set("tenant_id", res.GetPayload().Tenant.ID); err != nil {
+			return err
+		}
 	} else {
-		d.Set("tenant_id", nil)
+		if err := d.Set("tenant_id", nil); err != nil {
+			return err
+		}
 	}
 
 	cf := getCustomFields(res.GetPayload().CustomFields)
 	if cf != nil {
-		d.Set(customFieldsKey, cf)
+		return d.Set(customFieldsKey, cf)
 	}
-	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
-
-	return nil
+	return d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
 }
 
 func resourceNetboxSiteUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableSite{}
 
 	name := d.Get("name").(string)
@@ -279,12 +311,12 @@ func resourceNetboxSiteUpdate(d *schema.ResourceData, m interface{}) error {
 
 	latitudeValue, ok := d.GetOk("latitude")
 	if ok {
-		data.Latitude = float64ToPtr(float64(latitudeValue.(float64)))
+		data.Latitude = float64ToPtr(latitudeValue.(float64))
 	}
 
 	longitudeValue, ok := d.GetOk("longitude")
 	if ok {
-		data.Longitude = float64ToPtr(float64(longitudeValue.(float64)))
+		data.Longitude = float64ToPtr(longitudeValue.(float64))
 	}
 
 	physicalAddressValue, ok := d.GetOk("physical_address")
@@ -322,12 +354,12 @@ func resourceNetboxSiteUpdate(d *schema.ResourceData, m interface{}) error {
 		data.TimeZone = timezone.(string)
 	}
 
-	data.Asns = []int64{}
+	data.Asns = make([]int64, 0)
 	if asnsValue, ok := d.GetOk("asn_ids"); ok {
 		data.Asns = toInt64List(asnsValue)
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
+	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	cf, ok := d.GetOk(customFieldsKey)
 	if ok {
@@ -336,8 +368,8 @@ func resourceNetboxSiteUpdate(d *schema.ResourceData, m interface{}) error {
 
 	params := dcim.NewDcimSitesPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Dcim.DcimSitesPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimSitesPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -347,20 +379,15 @@ func resourceNetboxSiteUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxSiteDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
-	params := dcim.NewDcimSitesDeleteParams().WithID(id)
-
-	_, err := api.Dcim.DcimSitesDelete(params, nil)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
 		return err
 	}
-	return nil
-}
+	params := dcim.NewDcimSitesDeleteParams().WithID(id)
 
-func getIDsFromNestedASNList(nestedASNs []*models.NestedASN) []int64 {
-	var asns []int64
-	for _, asn := range nestedASNs {
-		asns = append(asns, asn.ID)
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimSitesDelete(params, nil); err != nil {
+		return err
 	}
-	return asns
+	return nil
 }

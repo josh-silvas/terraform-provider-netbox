@@ -3,11 +3,11 @@ package netbox
 import (
 	"strconv"
 
-	"github.com/fbreckle/go-netbox/netbox/client"
-	"github.com/fbreckle/go-netbox/netbox/client/dcim"
-	"github.com/fbreckle/go-netbox/netbox/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/netbox-community/go-netbox/netbox/client"
+	"github.com/netbox-community/go-netbox/netbox/client/dcim"
+	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
 func resourceNetboxDeviceType() *schema.Resource {
@@ -82,8 +82,6 @@ func resourceNetboxDeviceTypeCreate(d *schema.ResourceData, m interface{}) error
 		data.UHeight = float64ToPtr(float64(uHeightValue.(float64)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	params := dcim.NewDcimDeviceTypesCreateParams().WithData(&data)
 
 	res, err := api.Dcim.DcimDeviceTypesCreate(params, nil)
@@ -98,12 +96,16 @@ func resourceNetboxDeviceTypeCreate(d *schema.ResourceData, m interface{}) error
 
 func resourceNetboxDeviceTypeRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimDeviceTypesReadParams().WithID(id)
 
 	res, err := api.Dcim.DcimDeviceTypesRead(params, nil)
 
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*dcim.DcimDeviceTypesReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -113,13 +115,22 @@ func resourceNetboxDeviceTypeRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	device_type := res.GetPayload()
-	d.Set("model", device_type.Model)
-	d.Set("slug", device_type.Slug)
-	d.Set("manufacturer_id", device_type.Manufacturer.ID)
-	d.Set("part_number", device_type.PartNumber)
-	d.Set("u_height", device_type.UHeight)
-	d.Set(tagsKey, getTagListFromNestedTagList(device_type.Tags))
+	deviceType := res.GetPayload()
+	if err := d.Set("model", deviceType.Model); err != nil {
+		return err
+	}
+	if err := d.Set("slug", deviceType.Slug); err != nil {
+		return err
+	}
+	if err := d.Set("manufacturer_id", deviceType.Manufacturer.ID); err != nil {
+		return err
+	}
+	if err := d.Set("part_number", deviceType.PartNumber); err != nil {
+		return err
+	}
+	if err := d.Set("u_height", deviceType.UHeight); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -127,7 +138,10 @@ func resourceNetboxDeviceTypeRead(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxDeviceTypeUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableDeviceType{}
 
 	model := d.Get("model").(string)
@@ -154,12 +168,10 @@ func resourceNetboxDeviceTypeUpdate(d *schema.ResourceData, m interface{}) error
 		data.UHeight = float64ToPtr(float64(uHeightValue.(float64)))
 	}
 
-	data.Tags, _ = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
 	params := dcim.NewDcimDeviceTypesPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Dcim.DcimDeviceTypesPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimDeviceTypesPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -169,11 +181,14 @@ func resourceNetboxDeviceTypeUpdate(d *schema.ResourceData, m interface{}) error
 func resourceNetboxDeviceTypeDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimDeviceTypesDeleteParams().WithID(id)
 
-	_, err := api.Dcim.DcimDeviceTypesDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimDeviceTypesDelete(params, nil); err != nil {
 		return err
 	}
 	return nil
