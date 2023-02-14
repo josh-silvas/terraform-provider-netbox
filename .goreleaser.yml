@@ -24,9 +24,25 @@ builds:
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Env.VER }}_SHA256SUMS"
   algorithm: "sha256"
+archives:
+  - format: zip
+    name_template: "{{ .ProjectName }}_{{ .Env.VER }}_{{ .Os }}_{{ .Arch }}"
+signs:
+  - artifacts: checksum
+    args:
+      - "--batch"
+      - "--local-user"
+      - "{{ .Env.GPG_FINGERPRINT }}" # set this environment variable for your signing key
+      - "--output"
+      - "${signature}"
+      - "--detach-sign"
+      - "${artifact}"
 release:
-  # If you want to manually examine the release before its live, uncomment this line:
-  # draft: true
+  github:
+    owner: "josh-silvas"
+    name: "terraform-provider-netbox"
+  name_template: "{{ .Tag }}"
+  draft: false
 changelog:
   skip: true
 snapshot:
