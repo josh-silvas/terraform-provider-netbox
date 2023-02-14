@@ -44,7 +44,7 @@ func resourceNetboxCircuitProvider() *schema.Resource {
 func resourceNetboxCircuitProviderCreate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	data := models.WritableProvider{}
+	data := models.Provider{}
 
 	name := d.Get("name").(string)
 	data.Name = &name
@@ -58,7 +58,6 @@ func resourceNetboxCircuitProviderCreate(d *schema.ResourceData, m interface{}) 
 	}
 
 	data.Tags = []*models.NestedTag{}
-	data.Asns = []int64{}
 
 	params := circuits.NewCircuitsProvidersCreateParams().WithData(&data)
 
@@ -82,13 +81,6 @@ func resourceNetboxCircuitProviderRead(d *schema.ResourceData, m interface{}) er
 
 	res, err := api.Circuits.CircuitsProvidersRead(params, nil)
 	if err != nil {
-		// nolint: errorlint
-		errorcode := err.(*circuits.CircuitsProvidersReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
@@ -106,7 +98,7 @@ func resourceNetboxCircuitProviderUpdate(d *schema.ResourceData, m interface{}) 
 	if err != nil {
 		return err
 	}
-	data := models.WritableProvider{}
+	data := models.Provider{}
 
 	name := d.Get("name").(string)
 	data.Name = &name
@@ -120,7 +112,6 @@ func resourceNetboxCircuitProviderUpdate(d *schema.ResourceData, m interface{}) 
 	}
 
 	data.Tags = []*models.NestedTag{}
-	data.Asns = []int64{}
 
 	params := circuits.NewCircuitsProvidersPartialUpdateParams().WithID(id).WithData(&data)
 

@@ -73,10 +73,6 @@ func resourceCustomField() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"group_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"label": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -116,7 +112,6 @@ func resourceNetboxCustomFieldUpdate(d *schema.ResourceData, m interface{}) erro
 		Name:            strToPtr(d.Get("name").(string)),
 		Type:            d.Get("type").(string),
 		Description:     d.Get("description").(string),
-		GroupName:       d.Get("group_name").(string),
 		Label:           d.Get("label").(string),
 		Required:        d.Get("required").(bool),
 		ValidationRegex: d.Get("validation_regex").(string),
@@ -167,7 +162,6 @@ func resourceNetboxCustomFieldCreate(d *schema.ResourceData, m interface{}) erro
 		Name:            strToPtr(d.Get("name").(string)),
 		Type:            d.Get("type").(string),
 		Description:     d.Get("description").(string),
-		GroupName:       d.Get("group_name").(string),
 		Label:           d.Get("label").(string),
 		Required:        d.Get("required").(bool),
 		ValidationRegex: d.Get("validation_regex").(string),
@@ -222,16 +216,6 @@ func resourceNetboxCustomFieldRead(d *schema.ResourceData, m interface{}) error 
 	params := extras.NewExtrasCustomFieldsReadParams().WithID(id)
 	res, err := api.Extras.ExtrasCustomFieldsRead(params, nil)
 	if err != nil {
-		// nolint: errorlint
-		errapi, ok := err.(*extras.ExtrasCustomFieldsReadDefault)
-		if !ok {
-			return err
-		}
-		errorcode := errapi.Code()
-		if errorcode == 404 {
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
@@ -263,9 +247,6 @@ func resourceNetboxCustomFieldRead(d *schema.ResourceData, m interface{}) error 
 	}
 
 	if err := d.Set("description", res.GetPayload().Description); err != nil {
-		return err
-	}
-	if err := d.Set("group_name", res.GetPayload().GroupName); err != nil {
 		return err
 	}
 	if err := d.Set("label", res.GetPayload().Label); err != nil {

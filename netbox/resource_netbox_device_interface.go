@@ -100,15 +100,14 @@ func resourceNetboxDeviceInterfaceCreate(_ context.Context, d *schema.ResourceDa
 	deviceID := int64(d.Get("device_id").(int))
 
 	data := models.WritableInterface{
-		Name:         &name,
-		Description:  description,
-		Type:         &interfaceType,
-		Enabled:      enabled,
-		MgmtOnly:     mgmtonly,
-		Mode:         mode,
-		TaggedVlans:  taggedVlans,
-		Device:       &deviceID,
-		WirelessLans: []int64{},
+		Name:        &name,
+		Description: description,
+		Type:        &interfaceType,
+		Enabled:     enabled,
+		MgmtOnly:    mgmtonly,
+		Mode:        mode,
+		TaggedVlans: taggedVlans,
+		Device:      &deviceID,
 	}
 	if macAddress := d.Get("mac_address").(string); macAddress != "" {
 		data.MacAddress = &macAddress
@@ -145,13 +144,6 @@ func resourceNetboxDeviceInterfaceRead(_ context.Context, d *schema.ResourceData
 
 	res, err := api.Dcim.DcimInterfacesRead(params, nil)
 	if err != nil {
-		// nolint: errorlint
-		errorcode := err.(*dcim.DcimInterfacesReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return diag.FromErr(err)
 	}
 
@@ -219,15 +211,14 @@ func resourceNetboxDeviceInterfaceUpdate(_ context.Context, d *schema.ResourceDa
 	deviceID := int64(d.Get("device_id").(int))
 
 	data := models.WritableInterface{
-		Name:         &name,
-		Description:  description,
-		Type:         &interfaceType,
-		Enabled:      enabled,
-		MgmtOnly:     mgmtonly,
-		Mode:         mode,
-		TaggedVlans:  taggedVlans,
-		Device:       &deviceID,
-		WirelessLans: []int64{},
+		Name:        &name,
+		Description: description,
+		Type:        &interfaceType,
+		Enabled:     enabled,
+		MgmtOnly:    mgmtonly,
+		Mode:        mode,
+		TaggedVlans: taggedVlans,
+		Device:      &deviceID,
 	}
 
 	if d.HasChange("mac_address") {

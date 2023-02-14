@@ -79,7 +79,7 @@ func resourceNetboxDeviceTypeCreate(d *schema.ResourceData, m interface{}) error
 	}
 
 	if uHeightValue, ok := d.GetOk("u_height"); ok {
-		data.UHeight = float64ToPtr(float64(uHeightValue.(float64)))
+		data.UHeight = int64ToPtr(uHeightValue.(int64))
 	}
 
 	params := dcim.NewDcimDeviceTypesCreateParams().WithData(&data)
@@ -105,13 +105,6 @@ func resourceNetboxDeviceTypeRead(d *schema.ResourceData, m interface{}) error {
 	res, err := api.Dcim.DcimDeviceTypesRead(params, nil)
 
 	if err != nil {
-		// nolint: errorlint
-		errorcode := err.(*dcim.DcimDeviceTypesReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
@@ -165,7 +158,7 @@ func resourceNetboxDeviceTypeUpdate(d *schema.ResourceData, m interface{}) error
 	}
 
 	if uHeightValue, ok := d.GetOk("u_height"); ok {
-		data.UHeight = float64ToPtr(float64(uHeightValue.(float64)))
+		data.UHeight = int64ToPtr(uHeightValue.(int64))
 	}
 
 	params := dcim.NewDcimDeviceTypesPartialUpdateParams().WithID(id).WithData(&data)

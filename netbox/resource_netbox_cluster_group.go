@@ -64,9 +64,6 @@ func resourceNetboxClusterGroupCreate(d *schema.ResourceData, m interface{}) err
 	if description, ok := d.GetOk("description"); ok {
 		data.Description = description.(string)
 	}
-
-	data.Tags = []*models.NestedTag{}
-
 	params := virtualization.NewVirtualizationClusterGroupsCreateParams().WithData(&data)
 
 	res, err := api.Virtualization.VirtualizationClusterGroupsCreate(params, nil)
@@ -89,13 +86,6 @@ func resourceNetboxClusterGroupRead(d *schema.ResourceData, m interface{}) error
 
 	res, err := api.Virtualization.VirtualizationClusterGroupsRead(params, nil)
 	if err != nil {
-		// nolint: errorlint
-		errorcode := err.(*virtualization.VirtualizationClusterGroupsReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
@@ -139,8 +129,6 @@ func resourceNetboxClusterGroupUpdate(d *schema.ResourceData, m interface{}) err
 			data.Description = description.(string)
 		}
 	}
-
-	data.Tags = []*models.NestedTag{}
 
 	params := virtualization.NewVirtualizationClusterGroupsPartialUpdateParams().WithID(id).WithData(&data)
 

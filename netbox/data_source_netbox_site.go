@@ -22,12 +22,9 @@ func dataSourceNetboxSite() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"asn_ids": {
-				Type:     schema.TypeSet,
+			"asn_id": {
+				Type:     schema.TypeInt,
 				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeInt,
-				},
 			},
 			"comments": {
 				Type:     schema.TypeString,
@@ -88,7 +85,7 @@ func dataSourceNetboxSiteRead(d *schema.ResourceData, m interface{}) error {
 	site := res.GetPayload().Results[0]
 
 	d.SetId(strconv.FormatInt(site.ID, 10))
-	if err := d.Set("asn_ids", site.Asns); err != nil {
+	if err := d.Set("asn_id", site.Asn); err != nil {
 		return err
 	}
 	if err := d.Set("comments", site.Comments); err != nil {

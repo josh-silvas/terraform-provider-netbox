@@ -85,12 +85,9 @@ func resourceNetboxSite() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"asn_ids": {
-				Type:     schema.TypeSet,
+			"asn_id": {
+				Type:     schema.TypeInt,
 				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeInt,
-				},
 			},
 			customFieldsKey: customFieldsSchema,
 		},
@@ -128,12 +125,12 @@ func resourceNetboxSiteCreate(d *schema.ResourceData, m interface{}) error {
 
 	latitudeValue, ok := d.GetOk("latitude")
 	if ok {
-		data.Latitude = float64ToPtr(latitudeValue.(float64))
+		data.Latitude = strToPtr(latitudeValue.(string))
 	}
 
 	longitudeValue, ok := d.GetOk("longitude")
 	if ok {
-		data.Longitude = float64ToPtr(longitudeValue.(float64))
+		data.Longitude = strToPtr(longitudeValue.(string))
 	}
 
 	physicalAddressValue, ok := d.GetOk("physical_address")
@@ -165,9 +162,8 @@ func resourceNetboxSiteCreate(d *schema.ResourceData, m interface{}) error {
 		data.TimeZone = timezone.(string)
 	}
 
-	data.Asns = make([]int64, 0)
-	if asnsValue, ok := d.GetOk("asn_ids"); ok {
-		data.Asns = toInt64List(asnsValue)
+	if asnsValue, ok := d.GetOk("asn_id"); ok {
+		data.Asn = int64ToPtr(asnsValue.(int64))
 	}
 
 	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
@@ -235,7 +231,7 @@ func resourceNetboxSiteRead(d *schema.ResourceData, m interface{}) error {
 	if err := d.Set("timezone", site.TimeZone); err != nil {
 		return err
 	}
-	if err := d.Set("asn_ids", site.Asns); err != nil {
+	if err := d.Set("asn_id", site.Asn); err != nil {
 		return err
 	}
 
@@ -311,12 +307,12 @@ func resourceNetboxSiteUpdate(d *schema.ResourceData, m interface{}) error {
 
 	latitudeValue, ok := d.GetOk("latitude")
 	if ok {
-		data.Latitude = float64ToPtr(latitudeValue.(float64))
+		data.Latitude = strToPtr(latitudeValue.(string))
 	}
 
 	longitudeValue, ok := d.GetOk("longitude")
 	if ok {
-		data.Longitude = float64ToPtr(longitudeValue.(float64))
+		data.Longitude = strToPtr(longitudeValue.(string))
 	}
 
 	physicalAddressValue, ok := d.GetOk("physical_address")
@@ -354,9 +350,8 @@ func resourceNetboxSiteUpdate(d *schema.ResourceData, m interface{}) error {
 		data.TimeZone = timezone.(string)
 	}
 
-	data.Asns = make([]int64, 0)
-	if asnsValue, ok := d.GetOk("asn_ids"); ok {
-		data.Asns = toInt64List(asnsValue)
+	if asnsValue, ok := d.GetOk("asn_id"); ok {
+		data.Asn = int64ToPtr(asnsValue.(int64))
 	}
 
 	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))

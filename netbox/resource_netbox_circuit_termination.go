@@ -82,13 +82,6 @@ func resourceNetboxCircuitTerminationCreate(d *schema.ResourceData, m interface{
 		data.UpstreamSpeed = int64ToPtr(int64(upstreamspeedValue.(int)))
 	}
 
-	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
-	ct, ok := d.GetOk(customFieldsKey)
-	if ok {
-		data.CustomFields = ct
-	}
-
 	params := circuits.NewCircuitsCircuitTerminationsCreateParams().WithData(&data)
 
 	res, err := api.Circuits.CircuitsCircuitTerminationsCreate(params, nil)
@@ -112,13 +105,6 @@ func resourceNetboxCircuitTerminationRead(d *schema.ResourceData, m interface{})
 	res, err := api.Circuits.CircuitsCircuitTerminationsRead(params, nil)
 
 	if err != nil {
-		// nolint: errorlint
-		errorcode := err.(*circuits.CircuitsCircuitTerminationsReadDefault).Code()
-		if errorcode == 404 {
-			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-.html
-			d.SetId("")
-			return nil
-		}
 		return err
 	}
 
@@ -168,17 +154,6 @@ func resourceNetboxCircuitTerminationRead(d *schema.ResourceData, m interface{})
 		}
 	}
 
-	if err := d.Set(tagsKey, getTagListFromNestedTagList(term.Tags)); err != nil {
-		return err
-	}
-
-	cf := getCustomFields(term.CustomFields)
-	if cf != nil {
-		if err := d.Set(customFieldsKey, cf); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -213,14 +188,6 @@ func resourceNetboxCircuitTerminationUpdate(d *schema.ResourceData, m interface{
 	if ok {
 		data.UpstreamSpeed = int64ToPtr(int64(upstreamspeedValue.(int)))
 	}
-
-	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
-
-	cf, ok := d.GetOk(customFieldsKey)
-	if ok {
-		data.CustomFields = cf
-	}
-
 	params := circuits.NewCircuitsCircuitTerminationsPartialUpdateParams().WithID(id).WithData(&data)
 
 	// nolint: errcheck

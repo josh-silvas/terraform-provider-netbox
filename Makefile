@@ -1,12 +1,13 @@
+VERSION      := $(shell cat VERSION)
+
 TEST         ?= netbox/*.go
 GOFMT_FILES  ?= $$(find . -name '*.go' |grep -v vendor)
 
 PROJECT_NAME := "terraform-provider-netbox"
-VERSION      := "1.0.0"
 COMPOSE      := docker-compose --project-name $(PROJECT_NAME) --project-directory "develop" -f "develop/docker-compose.yml"
 RUN          := $(COMPOSE) run --rm develop
 
-default: testacc
+default: help
 
 release:
 	@$(RUN) "make goreleaser"
@@ -71,3 +72,12 @@ _unittest: debug
 	   cp develop/example.env develop/.env; \
 	fi
 .PHONY: .env
+
+help:
+	@echo "\033[1m\033[01;32m\
+	$(shell echo $(PROJECT_NAME) | tr  '[:lower:]' '[:upper:]') $(VERSION) \
+	\033[00m\n"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' \
+	$(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; \
+	{printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+.PHONY: help

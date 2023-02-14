@@ -120,7 +120,7 @@ func resourceNetboxPrimaryIPUpdate(d *schema.ResourceData, m interface{}) error 
 	}
 
 	if vm.Site != nil {
-		data.Site = &vm.Site.ID
+		data.Site = strconv.Itoa(int(vm.Site.ID))
 	}
 
 	if vm.PrimaryIp4 != nil {
