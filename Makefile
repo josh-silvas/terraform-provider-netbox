@@ -20,7 +20,7 @@ go-build:
 .PHONY: go-build
 
 goreleaser:
-	@rm -rf build/*
+	@rm -rf dist/*
 	@git tag -d $(VERSION) || true
 	@git tag $(VERSION)
 	@VER=$(VERSION) goreleaser --rm-dist --skip-validate --skip-announce
