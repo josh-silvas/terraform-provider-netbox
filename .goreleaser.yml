@@ -31,3 +31,5 @@ changelog:
   skip: true
 snapshot:
   name_template: "{{ .Env.VER }}"
+env_files:
+  github_token: "~/.config/goreleaser/github_token"
