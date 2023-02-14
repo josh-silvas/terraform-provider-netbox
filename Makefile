@@ -26,6 +26,10 @@ goreleaser:
 	@VER=$(VERSION) goreleaser --rm-dist --skip-validate --skip-announce
 .PHONY: goreleaser
 
+testgoreleaser:
+	@VER=$(VERSION) goreleaser --rm-dist --skip-validate --skip-announce --snapshot
+.PHONY: testgoreleaser
+
 cli:
 	@$(RUN) bash
 .PHONY: cli

@@ -176,7 +176,7 @@ func dataSourceNetboxDevicesRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	var filteredDevices []*models.DeviceWithConfigContext
+	var filteredDevices []*models.Device
 	if nameRegex, ok := d.GetOk("name_regex"); ok {
 		r := regexp.MustCompile(nameRegex.(string))
 		for _, device := range res.GetPayload().Results {
