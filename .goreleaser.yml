@@ -20,7 +20,7 @@ builds:
     ignore:
       - goos: "darwin"
         goarch: "386"
-    binary: "{{ .ProjectName }}_v{{ .Env.VER }}_{{ .Os }}_{{ .Arch }}"
+    binary: "{{ .ProjectName }}_{{ .Env.VER }}_{{ .Os }}_{{ .Arch }}"
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Env.VER }}_SHA256SUMS"
   algorithm: "sha256"
