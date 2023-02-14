@@ -2,9 +2,9 @@ package netbox
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/netbox-community/go-netbox/netbox/client"
-	"github.com/netbox-community/go-netbox/netbox/client/extras"
-	"github.com/netbox-community/go-netbox/netbox/models"
+	"github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox/netbox/client"
+	"github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox/netbox/client/extras"
+	"github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox/netbox/models"
 )
 
 const tagsKey = "tags"

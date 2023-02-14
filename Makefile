@@ -21,8 +21,8 @@ go-build:
 
 goreleaser:
 	@rm -rf dist/*
-	@git tag -d $(VERSION) || true
-	@git tag $(VERSION)
+	@git tag -d v$(VERSION) || true
+	@git tag v$(VERSION)
 	@VER=$(VERSION) goreleaser --rm-dist --skip-validate --skip-announce
 .PHONY: goreleaser
 

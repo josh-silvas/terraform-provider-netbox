@@ -6,7 +6,7 @@ require (
 	github.com/fbreckle/terraform-plugin-docs v0.0.0-20220812121758-a828466500d3
 	github.com/go-openapi/runtime v0.25.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
-	github.com/netbox-community/go-netbox v0.0.0-20210906183037-003380a92290
+	github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox v0.0.0-20210906183037-003380a92290
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
 )

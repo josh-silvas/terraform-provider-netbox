@@ -363,8 +363,8 @@ github.com/mitchellh/reflectwalk v1.0.0/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe/go.mod h1:wL8QJuTMNUDYhXwkmfOly8iTdp5TEcJFWZD2D7SIkUc=
-github.com/netbox-community/go-netbox v0.0.0-20210906183037-003380a92290 h1:CwMC6eUZPpTH3cm4jAx7Nx7q1hrKfFWnTWXhkEZmQes=
-github.com/netbox-community/go-netbox v0.0.0-20210906183037-003380a92290/go.mod h1:3btrRpHCCBHpz/Rc+MdkhGxEIDZP8GtmafG+3/phI9M=
+github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox v0.0.0-20210906183037-003380a92290 h1:CwMC6eUZPpTH3cm4jAx7Nx7q1hrKfFWnTWXhkEZmQes=
+github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox v0.0.0-20210906183037-003380a92290/go.mod h1:3btrRpHCCBHpz/Rc+MdkhGxEIDZP8GtmafG+3/phI9M=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/oklog/run v1.1.0 h1:GEenZ1cK0+q0+wsJew9qUg/DyD8k3JzYsZAi5gYi2mA=
 github.com/oklog/run v1.1.0/go.mod h1:sVPdnTZT1zYwAJeCMu2Th4T21pA3FPOQRfWjQlk7DVU=

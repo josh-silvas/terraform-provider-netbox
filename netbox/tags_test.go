@@ -3,7 +3,7 @@ package netbox
 import (
 	"testing"
 
-	"github.com/netbox-community/go-netbox/netbox/models"
+	"github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox/netbox/models"
 	"github.com/stretchr/testify/assert"
 )
 

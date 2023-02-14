@@ -7,7 +7,7 @@ import (
 	"time"
 
 	httptransport "github.com/go-openapi/runtime/client"
-	netboxclient "github.com/netbox-community/go-netbox/netbox/client"
+	netboxclient "github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox/netbox/client"
 	log "github.com/sirupsen/logrus"
 )
 

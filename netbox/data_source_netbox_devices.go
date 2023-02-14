@@ -10,9 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/netbox-community/go-netbox/netbox/client"
-	"github.com/netbox-community/go-netbox/netbox/client/dcim"
-	"github.com/netbox-community/go-netbox/netbox/models"
+	"github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox/netbox/client"
+	"github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox/netbox/client/dcim"
+	"github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox/netbox/models"
 )
 
 func dataSourceNetboxDevices() *schema.Resource {

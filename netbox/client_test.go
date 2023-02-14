@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	netboxClient "github.com/netbox-community/go-netbox/netbox/client"
-	"github.com/netbox-community/go-netbox/netbox/client/status"
+	netboxClient "github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox/netbox/client"
+	"github.com/josh-silvas/terraform-provider-netbox/clients/go-netbox/netbox/client/status"
 	"github.com/stretchr/testify/assert"
 )
 
