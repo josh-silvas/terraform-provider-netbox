@@ -10,7 +10,7 @@ RUN          := $(COMPOSE) run --rm develop
 default: help
 
 release:
-	@$(RUN) "make goreleaser"
+	@$(RUN) /usr/bin/make goreleaser
 .PHONY: release
 
 go-build:
@@ -21,7 +21,7 @@ go-build:
 
 goreleaser:
 	@rm -rf build/*
-	@VER=$(VERSION) goreleaser --rm-dist --skip-validate --skip-announce --snapshot
+	@VER=$(VERSION) goreleaser --rm-dist --skip-validate --skip-announce
 .PHONY: goreleaser
 
 cli:
