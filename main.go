@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	"github.com/josh-silvas/providers/terraform-provider-netbox/netbox"
+	"github.com/josh-silvas/terraform-provider-netbox/netbox"
 )
 
 // Run "go generate" to format example terraform files and generate the docs for the registry/website
@@ -22,7 +22,7 @@ func main() {
 
 	plugin.Serve(&plugin.ServeOpts{
 		Debug:        debug,
-		ProviderAddr: "tfe.robot.car/cruise/netbox",
+		ProviderAddr: "registry.terraform.io/josh-silvas/netbox",
 		ProviderFunc: func() *schema.Provider {
 			return netbox.Provider()
 		},

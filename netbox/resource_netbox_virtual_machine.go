@@ -194,12 +194,16 @@ func resourceNetboxVirtualMachineRead(_ context.Context, d *schema.ResourceData,
 
 	var diags diag.Diagnostics
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	params := virtualization.NewVirtualizationVirtualMachinesReadParams().WithID(id)
 
 	res, err := api.Virtualization.VirtualizationVirtualMachinesRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*virtualization.VirtualizationVirtualMachinesReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -350,7 +354,10 @@ func resourceNetboxVirtualMachineRead(_ context.Context, d *schema.ResourceData,
 func resourceNetboxVirtualMachineUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	data := models.WritableVirtualMachineWithConfigContext{}
 
 	name := d.Get("name").(string)
@@ -459,8 +466,8 @@ func resourceNetboxVirtualMachineUpdate(ctx context.Context, d *schema.ResourceD
 
 	params := virtualization.NewVirtualizationVirtualMachinesUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Virtualization.VirtualizationVirtualMachinesUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Virtualization.VirtualizationVirtualMachinesUpdate(params, nil); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -472,11 +479,14 @@ func resourceNetboxVirtualMachineDelete(ctx context.Context, d *schema.ResourceD
 
 	var diags diag.Diagnostics
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	params := virtualization.NewVirtualizationVirtualMachinesDeleteParams().WithID(id)
 
-	_, err := api.Virtualization.VirtualizationVirtualMachinesDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Virtualization.VirtualizationVirtualMachinesDelete(params, nil); err != nil {
 		return diag.FromErr(err)
 	}
 	return diags

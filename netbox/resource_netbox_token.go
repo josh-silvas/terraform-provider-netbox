@@ -90,11 +90,15 @@ func resourceNetboxTokenCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxTokenRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := users.NewUsersTokensReadParams().WithID(id)
 
 	res, err := api.Users.UsersTokensRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*users.UsersTokensReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -132,7 +136,10 @@ func resourceNetboxTokenRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxTokenUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableToken{}
 
 	userid := int64(d.Get("user_id").(int))
@@ -150,8 +157,8 @@ func resourceNetboxTokenUpdate(d *schema.ResourceData, m interface{}) error {
 	data.WriteEnabled = d.Get("write_enabled").(bool)
 
 	params := users.NewUsersTokensUpdateParams().WithID(id).WithData(&data)
-	_, err := api.Users.UsersTokensUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Users.UsersTokensUpdate(params, nil); err != nil {
 		return err
 	}
 	return resourceNetboxTokenRead(d, m)
@@ -159,10 +166,13 @@ func resourceNetboxTokenUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxTokenDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
-	params := users.NewUsersTokensDeleteParams().WithID(id)
-	_, err := api.Users.UsersTokensDelete(params, nil)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
+		return err
+	}
+	params := users.NewUsersTokensDeleteParams().WithID(id)
+	// nolint: errcheck
+	if _, err := api.Users.UsersTokensDelete(params, nil); err != nil {
 		return err
 	}
 	d.SetId("")

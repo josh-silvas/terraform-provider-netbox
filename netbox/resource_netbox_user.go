@@ -72,11 +72,15 @@ func resourceNetboxUserCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxUserRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := users.NewUsersUsersReadParams().WithID(id)
 
 	res, err := api.Users.UsersUsersRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*users.UsersUsersReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -101,7 +105,10 @@ func resourceNetboxUserRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxUserUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableUser{}
 
 	username := d.Get("username").(string)
@@ -117,8 +124,8 @@ func resourceNetboxUserUpdate(d *schema.ResourceData, m interface{}) error {
 	data.Groups = []int64{}
 
 	params := users.NewUsersUsersUpdateParams().WithID(id).WithData(&data)
-	_, err := api.Users.UsersUsersUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Users.UsersUsersUpdate(params, nil); err != nil {
 		return err
 	}
 	return resourceNetboxUserRead(d, m)
@@ -126,10 +133,13 @@ func resourceNetboxUserUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxUserDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
-	params := users.NewUsersUsersDeleteParams().WithID(id)
-	_, err := api.Users.UsersUsersDelete(params, nil)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
+		return err
+	}
+	params := users.NewUsersUsersDeleteParams().WithID(id)
+	// nolint: errcheck
+	if _, err := api.Users.UsersUsersDelete(params, nil); err != nil {
 		return err
 	}
 	d.SetId("")

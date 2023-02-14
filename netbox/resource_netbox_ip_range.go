@@ -10,12 +10,12 @@ import (
 	"github.com/netbox-community/go-netbox/netbox/models"
 )
 
-func resourceNetboxIpRange() *schema.Resource {
+func resourceNetboxIPRange() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceNetboxIpRangeCreate,
-		Read:   resourceNetboxIpRangeRead,
-		Update: resourceNetboxIpRangeUpdate,
-		Delete: resourceNetboxIpRangeDelete,
+		Create: resourceNetboxIPRangeCreate,
+		Read:   resourceNetboxIPRangeRead,
+		Update: resourceNetboxIPRangeUpdate,
+		Delete: resourceNetboxIPRangeDelete,
 
 		Description: `:meta:subcategory:IP Address Management (IPAM):From the [official documentation](https://docs.netbox.dev/en/stable/features/ipam/#ip-ranges):
 
@@ -60,7 +60,7 @@ func resourceNetboxIpRange() *schema.Resource {
 	}
 }
 
-func resourceNetboxIpRangeCreate(d *schema.ResourceData, m interface{}) error {
+func resourceNetboxIPRangeCreate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 	data := models.WritableIPRange{}
 
@@ -83,16 +83,20 @@ func resourceNetboxIpRangeCreate(d *schema.ResourceData, m interface{}) error {
 	}
 	d.SetId(strconv.FormatInt(res.GetPayload().ID, 10))
 
-	return resourceNetboxIpRangeUpdate(d, m)
+	return resourceNetboxIPRangeUpdate(d, m)
 }
 
-func resourceNetboxIpRangeRead(d *schema.ResourceData, m interface{}) error {
+func resourceNetboxIPRangeRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamIPRangesReadParams().WithID(id)
 
 	res, err := api.Ipam.IpamIPRangesRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*ipam.IpamIPRangesReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -146,9 +150,12 @@ func resourceNetboxIpRangeRead(d *schema.ResourceData, m interface{}) error {
 	return d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
 }
 
-func resourceNetboxIpRangeUpdate(d *schema.ResourceData, m interface{}) error {
+func resourceNetboxIPRangeUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableIPRange{}
 	startAddress := d.Get("start_address").(string)
 	endAddress := d.Get("end_address").(string)
@@ -176,19 +183,22 @@ func resourceNetboxIpRangeUpdate(d *schema.ResourceData, m interface{}) error {
 	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamIPRangesUpdateParams().WithID(id).WithData(&data)
-	_, err := api.Ipam.IpamIPRangesUpdate(params, nil)
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamIPRangesUpdate(params, nil); err != nil {
+		return err
+	}
+	return resourceNetboxIPRangeRead(d, m)
+}
+
+func resourceNetboxIPRangeDelete(d *schema.ResourceData, m interface{}) error {
+	api := m.(*client.NetBoxAPI)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
 		return err
 	}
-	return resourceNetboxIpRangeRead(d, m)
-}
-
-func resourceNetboxIpRangeDelete(d *schema.ResourceData, m interface{}) error {
-	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
 	params := ipam.NewIpamIPRangesDeleteParams().WithID(id)
-	_, err := api.Ipam.IpamIPRangesDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamIPRangesDelete(params, nil); err != nil {
 		return err
 	}
 

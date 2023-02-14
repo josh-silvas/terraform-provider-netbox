@@ -10,9 +10,9 @@ import (
 	"github.com/netbox-community/go-netbox/netbox/client/ipam"
 )
 
-func dataSourceNetboxIpRange() *schema.Resource {
+func dataSourceNetboxIPRange() *schema.Resource {
 	return &schema.Resource{
-		Read:        dataSourceNetboxIpRangeRead,
+		Read:        dataSourceNetboxIPRangeRead,
 		Description: `:meta:subcategory:IP Address Management (IPAM):`,
 		Schema: map[string]*schema.Schema{
 			"id": {
@@ -28,7 +28,7 @@ func dataSourceNetboxIpRange() *schema.Resource {
 	}
 }
 
-func dataSourceNetboxIpRangeRead(d *schema.ResourceData, m interface{}) error {
+func dataSourceNetboxIPRangeRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
 	contains := d.Get("contains").(string)
@@ -51,7 +51,9 @@ func dataSourceNetboxIpRangeRead(d *schema.ResourceData, m interface{}) error {
 		return errors.New("no result")
 	}
 	result := res.GetPayload().Results[0]
-	d.Set("id", result.ID)
+	if err := d.Set("id", result.ID); err != nil {
+		return err
+	}
 	d.SetId(strconv.FormatInt(result.ID, 10))
 	return nil
 }

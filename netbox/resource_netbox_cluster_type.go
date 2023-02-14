@@ -72,11 +72,15 @@ func resourceNetboxClusterTypeCreate(d *schema.ResourceData, m interface{}) erro
 
 func resourceNetboxClusterTypeRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := virtualization.NewVirtualizationClusterTypesReadParams().WithID(id)
 
 	res, err := api.Virtualization.VirtualizationClusterTypesRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*virtualization.VirtualizationClusterTypesReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -95,7 +99,10 @@ func resourceNetboxClusterTypeRead(d *schema.ResourceData, m interface{}) error 
 func resourceNetboxClusterTypeUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.ClusterType{}
 
 	name := d.Get("name").(string)
@@ -115,8 +122,8 @@ func resourceNetboxClusterTypeUpdate(d *schema.ResourceData, m interface{}) erro
 
 	params := virtualization.NewVirtualizationClusterTypesPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Virtualization.VirtualizationClusterTypesPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Virtualization.VirtualizationClusterTypesPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -126,11 +133,14 @@ func resourceNetboxClusterTypeUpdate(d *schema.ResourceData, m interface{}) erro
 func resourceNetboxClusterTypeDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := virtualization.NewVirtualizationClusterTypesDeleteParams().WithID(id)
 
-	_, err := api.Virtualization.VirtualizationClusterTypesDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Virtualization.VirtualizationClusterTypesDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

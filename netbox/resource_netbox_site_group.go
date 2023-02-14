@@ -53,7 +53,7 @@ func resourceNetboxSiteGroupCreate(d *schema.ResourceData, m interface{}) error 
 	api := m.(*client.NetBoxAPI)
 
 	name := d.Get("name").(string)
-	parent_id := int64(d.Get("parent_id").(int))
+	parentID := int64(d.Get("parent_id").(int))
 	description := d.Get("description").(string)
 
 	slugValue, slugOk := d.GetOk("slug")
@@ -71,8 +71,8 @@ func resourceNetboxSiteGroupCreate(d *schema.ResourceData, m interface{}) error 
 	data.Description = description
 	data.Tags = []*models.NestedTag{}
 
-	if parent_id != 0 {
-		data.Parent = &parent_id
+	if parentID != 0 {
+		data.Parent = &parentID
 	}
 
 	params := dcim.NewDcimSiteGroupsCreateParams().WithData(data)
@@ -89,12 +89,16 @@ func resourceNetboxSiteGroupCreate(d *schema.ResourceData, m interface{}) error 
 
 func resourceNetboxSiteGroupRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 
 	params := dcim.NewDcimSiteGroupsReadParams().WithID(id)
 
 	res, err := api.Dcim.DcimSiteGroupsRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*dcim.DcimSiteGroupsReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -125,7 +129,10 @@ func resourceNetboxSiteGroupRead(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxSiteGroupUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableSiteGroup{}
 
 	name := d.Get("name").(string)
@@ -151,8 +158,8 @@ func resourceNetboxSiteGroupUpdate(d *schema.ResourceData, m interface{}) error 
 	}
 	params := dcim.NewDcimSiteGroupsPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Dcim.DcimSiteGroupsPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimSiteGroupsPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -162,11 +169,14 @@ func resourceNetboxSiteGroupUpdate(d *schema.ResourceData, m interface{}) error 
 func resourceNetboxSiteGroupDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimSiteGroupsDeleteParams().WithID(id)
 
-	_, err := api.Dcim.DcimSiteGroupsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimSiteGroupsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

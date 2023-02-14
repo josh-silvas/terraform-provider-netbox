@@ -78,11 +78,15 @@ func resourceNetboxAggregateCreate(d *schema.ResourceData, m interface{}) error 
 
 func resourceNetboxAggregateRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamAggregatesReadParams().WithID(id)
 
 	res, err := api.Ipam.IpamAggregatesRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*ipam.IpamAggregatesReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -126,7 +130,10 @@ func resourceNetboxAggregateRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxAggregateUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableAggregate{}
 	prefix := d.Get("prefix").(string)
 	description := d.Get("description").(string)
@@ -145,8 +152,8 @@ func resourceNetboxAggregateUpdate(d *schema.ResourceData, m interface{}) error 
 	data.Tags = getNestedTagListFromResourceDataSet(api, d.Get(tagsKey))
 
 	params := ipam.NewIpamAggregatesUpdateParams().WithID(id).WithData(&data)
-	_, err := api.Ipam.IpamAggregatesUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamAggregatesUpdate(params, nil); err != nil {
 		return err
 	}
 	return resourceNetboxAggregateRead(d, m)
@@ -154,10 +161,13 @@ func resourceNetboxAggregateUpdate(d *schema.ResourceData, m interface{}) error 
 
 func resourceNetboxAggregateDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
-	params := ipam.NewIpamAggregatesDeleteParams().WithID(id)
-	_, err := api.Ipam.IpamAggregatesDelete(params, nil)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
+		return err
+	}
+	params := ipam.NewIpamAggregatesDeleteParams().WithID(id)
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamAggregatesDelete(params, nil); err != nil {
 		return err
 	}
 	d.SetId("")

@@ -103,12 +103,16 @@ func resourceNetboxCircuitTerminationCreate(d *schema.ResourceData, m interface{
 
 func resourceNetboxCircuitTerminationRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := circuits.NewCircuitsCircuitTerminationsReadParams().WithID(id)
 
 	res, err := api.Circuits.CircuitsCircuitTerminationsRead(params, nil)
 
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*circuits.CircuitsCircuitTerminationsReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-.html
@@ -181,7 +185,10 @@ func resourceNetboxCircuitTerminationRead(d *schema.ResourceData, m interface{})
 func resourceNetboxCircuitTerminationUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableCircuitTermination{}
 
 	termside := d.Get("term_side").(string)
@@ -216,8 +223,8 @@ func resourceNetboxCircuitTerminationUpdate(d *schema.ResourceData, m interface{
 
 	params := circuits.NewCircuitsCircuitTerminationsPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Circuits.CircuitsCircuitTerminationsPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Circuits.CircuitsCircuitTerminationsPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -227,11 +234,14 @@ func resourceNetboxCircuitTerminationUpdate(d *schema.ResourceData, m interface{
 func resourceNetboxCircuitTerminationDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := circuits.NewCircuitsCircuitTerminationsDeleteParams().WithID(id)
 
-	_, err := api.Circuits.CircuitsCircuitTerminationsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Circuits.CircuitsCircuitTerminationsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

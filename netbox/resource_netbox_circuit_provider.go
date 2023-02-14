@@ -74,12 +74,15 @@ func resourceNetboxCircuitProviderCreate(d *schema.ResourceData, m interface{}) 
 
 func resourceNetboxCircuitProviderRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := circuits.NewCircuitsProvidersReadParams().WithID(id)
 
 	res, err := api.Circuits.CircuitsProvidersRead(params, nil)
-
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*circuits.CircuitsProvidersReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -99,7 +102,10 @@ func resourceNetboxCircuitProviderRead(d *schema.ResourceData, m interface{}) er
 func resourceNetboxCircuitProviderUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableProvider{}
 
 	name := d.Get("name").(string)
@@ -118,8 +124,8 @@ func resourceNetboxCircuitProviderUpdate(d *schema.ResourceData, m interface{}) 
 
 	params := circuits.NewCircuitsProvidersPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Circuits.CircuitsProvidersPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Circuits.CircuitsProvidersPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -129,11 +135,14 @@ func resourceNetboxCircuitProviderUpdate(d *schema.ResourceData, m interface{}) 
 func resourceNetboxCircuitProviderDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := circuits.NewCircuitsProvidersDeleteParams().WithID(id)
 
-	_, err := api.Circuits.CircuitsProvidersDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Circuits.CircuitsProvidersDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

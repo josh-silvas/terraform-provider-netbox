@@ -98,12 +98,16 @@ func resourceNetboxLocationCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxLocationRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimLocationsReadParams().WithID(id)
 
 	res, err := api.Dcim.DcimLocationsRead(params, nil)
 
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*dcim.DcimLocationsReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -155,7 +159,10 @@ func resourceNetboxLocationRead(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxLocationUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableLocation{}
 
 	name := d.Get("name").(string)
@@ -188,8 +195,8 @@ func resourceNetboxLocationUpdate(d *schema.ResourceData, m interface{}) error {
 
 	params := dcim.NewDcimLocationsPartialUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Dcim.DcimLocationsPartialUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimLocationsPartialUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -199,11 +206,14 @@ func resourceNetboxLocationUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxLocationDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := dcim.NewDcimLocationsDeleteParams().WithID(id)
 
-	_, err := api.Dcim.DcimLocationsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Dcim.DcimLocationsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil

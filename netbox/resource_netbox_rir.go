@@ -68,11 +68,15 @@ func resourceNetboxRirCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxRirRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamRirsReadParams().WithID(id)
 
 	res, err := api.Ipam.IpamRirsRead(params, nil)
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*ipam.IpamRirsReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -99,7 +103,10 @@ func resourceNetboxRirRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxRirUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.RIR{}
 
 	name := d.Get("name").(string)
@@ -117,8 +124,8 @@ func resourceNetboxRirUpdate(d *schema.ResourceData, m interface{}) error {
 	data.Tags = []*models.NestedTag{}
 
 	params := ipam.NewIpamRirsUpdateParams().WithID(id).WithData(&data)
-	_, err := api.Ipam.IpamRirsUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamRirsUpdate(params, nil); err != nil {
 		return err
 	}
 	return resourceNetboxRirRead(d, m)
@@ -126,10 +133,13 @@ func resourceNetboxRirUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxRirDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
-	params := ipam.NewIpamRirsDeleteParams().WithID(id)
-	_, err := api.Ipam.IpamRirsDelete(params, nil)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
+		return err
+	}
+	params := ipam.NewIpamRirsDeleteParams().WithID(id)
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamRirsDelete(params, nil); err != nil {
 		return err
 	}
 	d.SetId("")

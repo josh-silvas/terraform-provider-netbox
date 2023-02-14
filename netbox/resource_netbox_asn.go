@@ -65,12 +65,15 @@ func resourceNetboxAsnCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceNetboxAsnRead(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamAsnsReadParams().WithID(id)
 
 	res, err := api.Ipam.IpamAsnsRead(params, nil)
-
 	if err != nil {
+		// nolint: errorlint
 		errorcode := err.(*ipam.IpamAsnsReadDefault).Code()
 		if errorcode == 404 {
 			// If the ID is updated to blank, this tells Terraform the resource no longer exists (maybe it was destroyed out of band). Just like the destroy callback, the Read function should gracefully handle this case. https://www.terraform.io/docs/extend/writing-custom-providers.html
@@ -93,7 +96,10 @@ func resourceNetboxAsnRead(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxAsnUpdate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	data := models.WritableASN{}
 
 	asn := int64(d.Get("asn").(int))
@@ -106,8 +112,8 @@ func resourceNetboxAsnUpdate(d *schema.ResourceData, m interface{}) error {
 
 	params := ipam.NewIpamAsnsUpdateParams().WithID(id).WithData(&data)
 
-	_, err := api.Ipam.IpamAsnsUpdate(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamAsnsUpdate(params, nil); err != nil {
 		return err
 	}
 
@@ -117,11 +123,14 @@ func resourceNetboxAsnUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceNetboxAsnDelete(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
-	id, _ := strconv.ParseInt(d.Id(), 10, 64)
+	id, err := strconv.ParseInt(d.Id(), 10, 64)
+	if err != nil {
+		return err
+	}
 	params := ipam.NewIpamAsnsDeleteParams().WithID(id)
 
-	_, err := api.Ipam.IpamAsnsDelete(params, nil)
-	if err != nil {
+	// nolint: errcheck
+	if _, err := api.Ipam.IpamAsnsDelete(params, nil); err != nil {
 		return err
 	}
 	return nil
